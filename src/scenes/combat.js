@@ -62,6 +62,7 @@ export default async function (app) {
 
   await step(0.88, '剑 · sword');
   const game = await createGame(app, { env, terrain, grass, vfx, hud, audio, interaction });
+  if (hud) await opt('../ui/touch.js', 'createTouchControls', app, { game, hud });   // phones, tablets, ?touch=1
   window.__full = { env, terrain, grass, vfx, hud, audio, game, interaction };
   if (report.failed.length) console.warn('[combat] optional modules failed:', report.failed.map((f) => f.path).join(', '));
 

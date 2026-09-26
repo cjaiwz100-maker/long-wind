@@ -334,7 +334,8 @@ export class Game {
     }
     if (b.pause.pressed) { this.setPaused(!this.paused); return true; }
     if (this.paused && (b.light.pressed || b.start.pressed)) { this.setPaused(false); return true; }
-    if (this.state === 'playing' && b.light.pressed && !input.locked && !this.autopilot && !this.params.has('harness')) {
+    // (touch controls have no cursor to capture: their first 斩 is a real strike)
+    if (this.state === 'playing' && b.light.pressed && !input.locked && !input.touch.enabled && !this.autopilot && !this.params.has('harness')) {
       input.requestLock();
       if (!this._lockedOnce) { this._lockedOnce = true; return true; } // the first click only captures the mouse
     }

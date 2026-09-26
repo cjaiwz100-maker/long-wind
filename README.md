@@ -51,7 +51,7 @@
 - 约 **37,000 行** JavaScript / GLSL，148 个源文件，只有一个运行时依赖（three.js）
 - **没有一个音频文件**：音乐、打击声、雨声、雷声、人声、市井喧哗全部用 WebAudio 实时合成
 - 地形、草、竹林、古镇建筑、天气、市民、大部分动作片段都是程序化生成
-- 29 项无头玩法测试（`npm test`）
+- 30 项无头玩法测试（`npm test`）
 
 **AI 自己查出来的几个有意思的问题**
 
@@ -70,6 +70,8 @@
 | Space | 闪避 | | Shift | 疾跑 |
 | Q / Tab | 锁定 | | E | 剑气 |
 | F | 拔剑 / 收剑 | | Esc | 暂停（可切换画质与章节） |
+
+**手机 / 平板**：触屏设备自动显示水墨风格的虚拟按键 —— 左手拇指在屏幕左侧任意位置按下即出现摇杆（推过外圈为疾跑），右侧空白处滑动转视角；右下角：斩（按住蓄力重击）、闪、格（命中瞬间按下弹反）、气、锁、剑，右上角暂停。建议横屏游玩。`?touch=1` 强制显示，`?touch=0` 关闭。
 
 **录屏模式**：`H` 隐藏界面 · `O` 环绕运镜 · `T` 慢动作。
 
@@ -98,6 +100,8 @@ npm run build    # 静态站点输出到 dist/
 - Zero audio files: music, impacts, rain, thunder, voices and crowd noise are synthesized live with WebAudio
 - Terrain, grass, bamboo, the town, weather, townsfolk and most animation clips are procedural
 - Character models were generated with Tripo AI (see [CREDITS.md](CREDITS.md))
+
+**Phones and tablets** get on-screen ink-brush controls: a floating left thumb-stick (push past the rim to sprint), drag on the right to look, and a fan of 斩 strike (hold: heavy) · 闪 dodge · 格 block/parry · 气 sword qi · 锁 lock · 剑 draw buttons; landscape recommended (`?touch=1` forces them, `?touch=0` hides them).
 
 **Record mode:** `H` hides the HUD, `O` orbit camera, `T` slow motion. URL: `?level=steppe|bamboo|town`, `?demo=1` (AI plays), `?hud=0`, `?q=low|med|high`.
 

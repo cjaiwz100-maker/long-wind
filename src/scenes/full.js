@@ -97,6 +97,8 @@ export default async function (app) {
 
   await step(0.86, '剑 · sword');
   const game = await load('game', '../game/game.js', 'createGame', app, { env, terrain, grass, vfx, hud, audio, interaction });
+  // phones and tablets: thumb-stick, look drag and brush buttons (?touch=1 forces them, ?touch=0 turns them off)
+  if (game && hud) await load('touch', '../ui/touch.js', 'createTouchControls', app, { game, hud });
 
   // townsfolk (they need the game for the danger points: the hero and the living enemies)
   let citizens = null;

@@ -1,6 +1,6 @@
-// Input: keyboard + mouse (pointer lock) + standard gamepad, folded into one per-frame action state. The demo
-// autopilot writes into `input.virtual`, which is merged the same way, so gameplay never knows who is playing.
-// Owner: gameplay (P).
+// Input: keyboard + mouse (pointer lock) + standard gamepad + on-screen touch controls, folded into one per-frame
+// action state. The demo autopilot writes into `input.virtual`, which is merged the same way, so gameplay never knows
+// who is playing. Owner: gameplay (P).
 //
 //   const input = new Input(canvas)
 //   input.update(rawDt)      — once per frame BEFORE gameplay reads it (latches edges, polls the gamepad)
@@ -12,10 +12,14 @@
 //   input.endFrame()         — clears per-frame deltas (call after gameplay + camera read them)
 //   input.requestLock() / input.locked / input.idle (real s since the last human input)
 //   input.virtual.press(a) / .hold(a, on) / .setMove(x, y) / .setLook(dx, dy) / .clear()
+//   input.touch.enabled / .hold(a, on) / .setMove(x, y) / .look(dx, dy) / .n / .clear()   — written by ui/touch.js;
+//      human input like keys and pad. While enabled there is no pointer lock (touch has no cursor to capture).
 //
 // Defaults (CONTRACTS): WASD move · mouse look · LMB light (hold = heavy charge) · RMB block (press just before
 // impact = parry) · Space dodge · Shift sprint · Q/Tab/MMB lock-on · E sword-qi · F draw/sheathe · Esc/P pause.
 // Extras: C heavy, Enter start, R restart.
+// Touch (ui/touch.js): left thumb-stick (past the rim = sprint) · right-side drag look · 斩 light (hold = heavy) ·
+// 格 block (tap at impact = parry) · 闪 dodge · 气 sword-qi · 锁 lock-on · 剑 draw/sheathe · ‖ pause.
 import * as THREE from 'three';
 
 export const ACTIONS = ['light', 'heavy', 'block', 'dodge', 'sprint', 'lock', 'special', 'draw', 'pause', 'start', 'restart'];
@@ -33,7 +37,9 @@ const MOUSE_MAP = ['light', 'lock', 'block']; // button 0, 1 (middle), 2
 // standard gamepad mapping
 const PAD_MAP = { 0: 'dodge', 1: 'draw', 2: 'light', 3: 'heavy', 4: 'lock', 5: 'block', 6: 'special', 7: 'heavy', 9: 'pause', 10: 'sprint', 11: 'lock' };
 
-function makeButton() { return { down: false, pressed: false, released: false, held: 0, pressT: -1, _p: 0, _r: 0, _raw: false, _pad: false, _vd: false, _vp: 0 }; }
+const TOUCH_LOOK_RATE = 28;   // 1/s: a touch drag reaches the camera over a few frames (smooths 60 Hz touch sampling)
+
+function makeButton() { return { down: false, pressed: false, released: false, held: 0, pressT: -1, _p: 0, _r: 0, _raw: false, _pad: false, _vd: false, _vp: 0, _td: false }; }
 
 export class Input {
   constructor(canvas, { sensitivity = 0.0022 } = {}) {
@@ -57,6 +63,7 @@ export class Input {
     this._padLook = new THREE.Vector2();
     this._any = 0;
     this.virtual = this._makeVirtual();
+    this.touch = this._makeTouch();
     this._bind();
   }
 
@@ -72,6 +79,23 @@ export class Input {
       setMove(x, y) { this.move.set(x, y); if (this.move.lengthSq() > 1) this.move.normalize(); },
       setLook(dx, dy) { this.look.set(dx, dy); },
       clear() { this.move.set(0, 0); this.look.set(0, 0); for (const a of ACTIONS) { if (self.b[a]._vd) self.b[a]._r++; self.b[a]._vd = false; } },
+    };
+  }
+
+  // on-screen controls: a human source (edges count as key presses, look counts as mouse look)
+  _makeTouch() {
+    const self = this;
+    return {
+      enabled: false, n: 0, move: new THREE.Vector2(), _look: new THREE.Vector2(),
+      hold(a, on) {
+        const b = self.b[a]; if (!b) return;
+        if (on && !b._td) { b._p++; self._any++; }
+        if (!on && b._td) b._r++;
+        b._td = !!on; self._human();
+      },
+      setMove(x, y) { this.move.set(x, y); if (this.move.lengthSq() > 1) this.move.normalize(); self._human(); },
+      look(dx, dy) { this._look.x += dx; this._look.y += dy; self.lastLookT = self.real; self._human(); },
+      clear() { this.move.set(0, 0); this._look.set(0, 0); for (const a of ACTIONS) { if (self.b[a]._td) self.b[a]._r++; self.b[a]._td = false; } },
     };
   }
 
@@ -130,11 +154,12 @@ export class Input {
   clear() {
     this._keys.clear();
     for (const a of ACTIONS) { const b = this.b[a]; if (b._raw) b._r++; b._raw = false; b._pad = false; }
+    this.touch.clear();
   }
 
   requestLock() {
     const c = this.canvas;
-    if (!c?.requestPointerLock || this.locked) return;
+    if (!c?.requestPointerLock || this.locked || this.touch.enabled) return;
     try {
       const p = c.requestPointerLock({ unadjustedMovement: true });
       if (p?.catch) p.catch(() => { try { c.requestPointerLock()?.catch?.(() => {}); } catch { /* unsupported */ } });
@@ -173,14 +198,22 @@ export class Input {
   update(rawDt) {
     this.real += rawDt;
     this._pollPad(rawDt);
-    // movement: keys + pad + virtual, clamped to the unit disc
+    // movement: keys + pad + touch + virtual, clamped to the unit disc
+    const T = this.touch;
     let mx = 0, my = 0;
     for (const k of this._keys) { const m = MOVE_KEYS[k]; if (m) { mx += m[0]; my += m[1]; } }
-    mx += this._padMove.x; my += this._padMove.y;
+    mx += this._padMove.x + T.move.x; my += this._padMove.y + T.move.y;
     if (this.virtual.active) { mx += this.virtual.move.x; my += this.virtual.move.y; }
     this.move.set(mx, my);
     if (this.move.lengthSq() > 1) this.move.normalize();
     this.look.copy(this._mouseLook).add(this._padLook);
+    if (T._look.x || T._look.y) {
+      const k = 1 - Math.exp(-TOUCH_LOOK_RATE * rawDt);
+      this.look.x += T._look.x * k; this.look.y += T._look.y * k;
+      T._look.multiplyScalar(1 - k);
+      if (T._look.lengthSq() < 1e-10) T._look.set(0, 0);
+    }
+    if (T.n > 0) this._human();          // a thumb resting on the stick or a held button is still playing
     if (this.virtual.active) this.look.add(this.virtual.look);
     this._mouseLook.set(0, 0);
     this.zoom = this._wheel; this._wheel = 0;
@@ -188,7 +221,7 @@ export class Input {
     for (const a of ACTIONS) {
       const b = this.b[a];
       const presses = b._p + b._vp;
-      const nowDown = b._raw || b._pad || b._vd;
+      const nowDown = b._raw || b._pad || b._vd || b._td;
       b.pressed = presses > 0;
       b.released = b._r > 0 || (b.down && !nowDown);
       b.down = nowDown;
