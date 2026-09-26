@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vite/
+.DS_Store
+*.log
+
+# local working material, not part of the game
+shots/
+docs/ref/
+# unused early character model
+public/assets/models/hero-wuxia.glb
+docs/ref-notes/

@@ -1,0 +1,126 @@
+{
+  "textures": {
+    "grass_path_3": {
+      "res": "2k",
+      "diffuse": "assets/ph/textures/grass_path_3/diffuse_2k.jpg",
+      "normal": "assets/ph/textures/grass_path_3/nor_gl_2k.jpg",
+      "arm": "assets/ph/textures/grass_path_3/arm_2k.jpg"
+    },
+    "rocky_terrain_02": {
+      "res": "2k",
+      "diffuse": "assets/ph/textures/rocky_terrain_02/diffuse_2k.jpg",
+      "normal": "assets/ph/textures/rocky_terrain_02/nor_gl_2k.jpg",
+      "arm": "assets/ph/textures/rocky_terrain_02/arm_2k.jpg"
+    },
+    "sparse_grass": {
+      "res": "2k",
+      "diffuse": "assets/ph/textures/sparse_grass/diffuse_2k.jpg",
+      "normal": "assets/ph/textures/sparse_grass/nor_gl_2k.jpg",
+      "arm": "assets/ph/textures/sparse_grass/arm_2k.jpg"
+    },
+    "leafy_grass": {
+      "res": "1k",
+      "diffuse": "assets/ph/textures/leafy_grass/diffuse_1k.jpg",
+      "normal": "assets/ph/textures/leafy_grass/nor_gl_1k.jpg",
+      "arm": "assets/ph/textures/leafy_grass/arm_1k.jpg"
+    },
+    "dry_ground_rocks": {
+      "res": "1k",
+      "diffuse": "assets/ph/textures/dry_ground_rocks/diffuse_1k.jpg",
+      "normal": "assets/ph/textures/dry_ground_rocks/nor_gl_1k.jpg",
+      "arm": "assets/ph/textures/dry_ground_rocks/arm_1k.jpg"
+    },
+    "forest_leaves_02": {
+      "res": "1k",
+      "diffuse": "assets/ph/textures/forest_leaves_02/diffuse_1k.jpg",
+      "normal": "assets/ph/textures/forest_leaves_02/nor_gl_1k.jpg",
+      "arm": "assets/ph/textures/forest_leaves_02/arm_1k.jpg"
+    },
+    "rock_boulder_dry": {
+      "res": "1k",
+      "diffuse": "assets/ph/textures/rock_boulder_dry/diffuse_1k.jpg",
+      "normal": "assets/ph/textures/rock_boulder_dry/nor_gl_1k.jpg",
+      "arm": "assets/ph/textures/rock_boulder_dry/arm_1k.jpg"
+    },
+    "rough_linen": {
+      "res": "1k",
+      "diffuse": "assets/ph/textures/rough_linen/diffuse_1k.jpg",
+      "normal": "assets/ph/textures/rough_linen/nor_gl_1k.jpg",
+      "arm": "assets/ph/textures/rough_linen/arm_1k.jpg"
+    },
+    "brown_leather": {
+      "res": "1k",
+      "diffuse": "assets/ph/textures/brown_leather/diffuse_1k.jpg",
+      "normal": "assets/ph/textures/brown_leather/nor_gl_1k.jpg",
+      "arm": "assets/ph/textures/brown_leather/arm_1k.jpg"
+    },
+    "pine_bark": {
+      "res": "1k",
+      "diffuse": "assets/ph/textures/pine_bark/diffuse_1k.jpg",
+      "normal": "assets/ph/textures/pine_bark/nor_gl_1k.jpg",
+      "arm": "assets/ph/textures/pine_bark/arm_1k.jpg"
+    },
+    "chinese_cedar_bark": {
+      "res": "1k",
+      "diffuse": "assets/ph/textures/chinese_cedar_bark/diffuse_1k.jpg",
+      "normal": "assets/ph/textures/chinese_cedar_bark/nor_gl_1k.jpg",
+      "arm": "assets/ph/textures/chinese_cedar_bark/arm_1k.jpg"
+    },
+    "weathered_planks": {
+      "res": "1k",
+      "diffuse": "assets/ph/textures/weathered_planks/diffuse_1k.jpg",
+      "normal": "assets/ph/textures/weathered_planks/nor_gl_1k.jpg",
+      "arm": "assets/ph/textures/weathered_planks/arm_1k.jpg"
+    },
+    "japanese_stone_wall": {
+      "res": "1k",
+      "diffuse": "assets/ph/textures/japanese_stone_wall/diffuse_1k.jpg",
+      "normal": "assets/ph/textures/japanese_stone_wall/nor_gl_1k.jpg",
+      "arm": "assets/ph/textures/japanese_stone_wall/arm_1k.jpg"
+    },
+    "ceramic_roof_01": {
+      "res": "1k",
+      "diffuse": "assets/ph/textures/ceramic_roof_01/diffuse_1k.jpg",
+      "normal": "assets/ph/textures/ceramic_roof_01/nor_gl_1k.jpg",
+      "arm": "assets/ph/textures/ceramic_roof_01/arm_1k.jpg"
+    }
+  },
+  "models": {
+    "rock_moss_set_02": {
+      "res": "1k",
+      "gltf": "assets/ph/models/rock_moss_set_02/rock_moss_set_02_1k.gltf"
+    },
+    "rock_moss_set_01": {
+      "res": "1k",
+      "gltf": "assets/ph/models/rock_moss_set_01/rock_moss_set_01_1k.gltf"
+    },
+    "namaqualand_boulder_05": {
+      "res": "1k",
+      "gltf": "assets/ph/models/namaqualand_boulder_05/namaqualand_boulder_05_1k.gltf"
+    },
+    "boulder_01": {
+      "res": "1k",
+      "gltf": "assets/ph/models/boulder_01/boulder_01_1k.gltf"
+    },
+    "stone_01": {
+      "res": "1k",
+      "gltf": "assets/ph/models/stone_01/stone_01_1k.gltf"
+    },
+    "rock_face_01": {
+      "res": "1k",
+      "gltf": "assets/ph/models/rock_face_01/rock_face_01_1k.gltf"
+    },
+    "rock_07": {
+      "res": "1k",
+      "gltf": "assets/ph/models/rock_07/rock_07_1k.gltf"
+    },
+    "namaqualand_boulder_02": {
+      "res": "1k",
+      "gltf": "assets/ph/models/namaqualand_boulder_02/namaqualand_boulder_02_1k.gltf"
+    },
+    "rock_09": {
+      "res": "1k",
+      "gltf": "assets/ph/models/rock_09/rock_09_1k.gltf"
+    }
+  }
+}

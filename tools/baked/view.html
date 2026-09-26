@@ -1,0 +1,101 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Baked clip viewer</title>
+<style>html,body{margin:0;background:#2a2d33;overflow:hidden}canvas{display:block}#lab{position:fixed;left:6px;top:4px;color:#ddd;font:12px monospace;white-space:pre}</style></head>
+<body><div id="lab"></div>
+<script type="module">
+// Dev tool: contact sheets + motion analysis for baked (Tripo) animation clips.
+//   /tools/baked/view.html?url=/assets/models/hero-tripo.glb&clip=3&n=8&view=side&t0=0&t1=2
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const Q = new URLSearchParams(location.search);
+const url = Q.get('url') ?? '/assets/models/hero-tripo.glb';
+const W = innerWidth, H = innerHeight;
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H); renderer.setScissorTest(true); document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xdde6ff, 0x554433, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(2, 4, 3); scene.add(sun);
+const grid = new THREE.GridHelper(10, 20, 0x666666, 0x444444); scene.add(grid);
+const gltf = await new GLTFLoader().loadAsync(url);
+const root = gltf.scene; scene.add(root); root.traverse((o) => { o.frustumCulled = false; });
+const clips = gltf.animations;
+root.updateMatrixWorld(true);
+const hipsRestQ = (() => { let h; root.traverse((o) => { if (/Hips$/.test(o.name)) h = o; }); return h.getWorldQuaternion(new THREE.Quaternion()); })();
+const mixer = new THREE.AnimationMixer(root);
+const bone = (n) => { let b = null; root.traverse((o) => { if (o.name === 'mixamorig' + n || o.name === 'mixamorig:' + n) b = o; }); return b; };
+const B = { hips: bone('Hips'), rh: bone('RightHand'), lh: bone('LeftHand'), rf: bone('RightFoot'), lf: bone('LeftFoot'), head: bone('Head'), rfa: bone('RightForeArm'), rmid: bone('RightHandMiddle1'), rthumb: bone('RightHandThumb1'), rindex: bone('RightHandIndex1'), rpinky: bone('RightHandPinky1') };
+// provisional blade: from the fist, along the hand's thumb-ward axis
+const blade = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.8, 0.03), new THREE.MeshStandardMaterial({ color: 0xccddee, metalness: 0.8, roughness: 0.3 }));
+scene.add(blade);
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
+const WRIST = Q.get('wrist') ?? 'dyn';
+const B2 = { rua: bone('RightArm') };
+// Sword grip for clips authored with an empty hand: the blade leaves the fist on the thumb side and leans toward the
+// forearm's line as the arm extends (cuts and thrusts extend the line; a bent, guarding arm cocks the blade up).
+function solveGrip() {
+  const sh = B2.rua.getWorldPosition(new THREE.Vector3()), el = B.rfa.getWorldPosition(new THREE.Vector3()), wr = B.rh.getWorldPosition(new THREE.Vector3());
+  const fa = wr.clone().sub(el).normalize();
+  const reach = sh.distanceTo(wr) / (sh.distanceTo(el) + el.distanceTo(wr));
+  const beta = THREE.MathUtils.degToRad(THREE.MathUtils.lerp(85, 28, THREE.MathUtils.smoothstep(reach, 0.62, 0.97)));
+  B.rindex.getWorldPosition(_c); B.rpinky.getWorldPosition(_b);
+  const k0 = _c.clone().sub(_b).normalize();
+  const kp = k0.clone().addScaledVector(fa, -k0.dot(fa)).normalize();       // thumb side, square to the forearm
+  const want = fa.clone().multiplyScalar(Math.cos(beta)).addScaledVector(kp, Math.sin(beta));
+  const q = new THREE.Quaternion().setFromUnitVectors(k0, want);
+  const hq = B.rh.getWorldQuaternion(new THREE.Quaternion()).premultiply(q);
+  B.rh.quaternion.copy(B.rh.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(hq));
+  B.rh.updateMatrixWorld(true);
+}
+function placeBlade() {
+  if (WRIST === 'dyn') solveGrip();
+  B.rh.getWorldPosition(_a); B.rmid.getWorldPosition(_b); B.rindex.getWorldPosition(_c); B.rpinky.getWorldPosition(_d);
+  const k = _c.clone().sub(_d).normalize();
+  const f = _b.clone().sub(_a).normalize();
+  const grip = _a.clone().lerp(_b, 0.75);
+  blade.position.copy(grip).addScaledVector(k, 0.42);
+  blade.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), k);
+  return { grip, k, f };
+}
+function poseAt(ci, t) {
+  mixer.stopAllAction(); const a = mixer.clipAction(clips[ci]); a.play(); mixer.setTime(Math.min(t, clips[ci].duration - 1e-4));
+  root.updateMatrixWorld(true);
+}
+window.__clips = clips.map((c, i) => [i, +c.duration.toFixed(2), c.name.slice(0, 60)]);
+// analysis: 60 Hz samples of key joints
+window.__analyse = (ci, hz = 30) => {
+  const c = clips[ci], out = [];
+  for (let t = 0; t <= c.duration + 1e-6; t += 1 / hz) {
+    poseAt(ci, t); const bl = placeBlade();
+    const p = (b) => b.getWorldPosition(new THREE.Vector3()).toArray().map((x) => +x.toFixed(3));
+    const tip = bl.grip.clone().addScaledVector(bl.k, 0.8);
+    const hf = new THREE.Vector3(0, 0, 1).applyQuaternion(hipsRestQ.clone().invert()).applyQuaternion(B.hips.getWorldQuaternion(new THREE.Quaternion()));
+    out.push({ t: +t.toFixed(3), hf: [+hf.x.toFixed(3), +hf.z.toFixed(3)], hips: p(B.hips), rh: p(B.rh), lh: p(B.lh), rf: p(B.rf), lf: p(B.lf), tip: tip.toArray().map((x) => +x.toFixed(3)) });
+  }
+  return out;
+};
+// contact sheet
+const ci = +(Q.get('clip') ?? 0), n = +(Q.get('n') ?? 8);
+const c = clips[ci];
+const t0 = +(Q.get('t0') ?? 0), t1 = +(Q.get('t1') ?? c.duration);
+const view = Q.get('view') ?? 'side';
+const cols = Math.min(n, +(Q.get('cols') ?? n)), rows = Math.ceil(n / cols);
+const cw = W / cols, chh = H / rows;
+const cam = new THREE.PerspectiveCamera(30, cw / chh, 0.1, 100);
+let lab = `${ci}: ${c.name.slice(0, 90)}  (${c.duration.toFixed(2)}s)\n`;
+poseAt(ci, 0); const h0 = B.hips.getWorldPosition(new THREE.Vector3());
+for (let i = 0; i < n; i++) {
+  const t = t0 + (t1 - t0) * (n > 1 ? i / (n - 1) : 0);
+  poseAt(ci, t); placeBlade();
+  const hp = B.hips.getWorldPosition(new THREE.Vector3());
+  const tgt = new THREE.Vector3(Q.get('follow') === '0' ? h0.x : hp.x, 0.85, Q.get('follow') === '0' ? h0.z : hp.z);
+  const dir = view === 'front' ? new THREE.Vector3(0, 0.15, 1) : view === 'three' ? new THREE.Vector3(0.8, 0.25, 0.8) : new THREE.Vector3(1, 0.12, 0);
+  cam.position.copy(tgt).addScaledVector(dir.normalize(), +(Q.get('dist') ?? 3.6)); cam.lookAt(tgt);
+  const x = (i % cols) * cw, y = H - (Math.floor(i / cols) + 1) * chh;
+  renderer.setViewport(x, y, cw, chh); renderer.setScissor(x, y, cw, chh);
+  renderer.setClearColor(i % 2 ? 0x2a2d33 : 0x30343b); renderer.clear();
+  renderer.render(scene, cam);
+  lab += `${t.toFixed(2)} `;
+}
+document.getElementById('lab').textContent = lab;
+window.__ready = true;
+</script></body></html>
