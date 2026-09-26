@@ -11,7 +11,8 @@
 //   ?scene=anim&ground=terrain             use the real terrain (foot IK on slopes)
 //   ?scene=anim&duel=enemyHeavy            hero vs bandit: the bandit plays the clip, the hero blocks/parries
 //   ?scene=anim                            showreel: cycles every combat clip
-// Hooks: window.__anim = { anim, ch, pose(name,t), play(name), setLoco({...}), slide(speed, dirX, dirZ) }.
+// Hooks: window.__anim = { anim, ch, pose(name,t), play(name), setLoco({...}), slide(speed, dirX, dirZ) };
+//        focus = () => Vector3 (camera frames that point, focusDist / focusDir optional — joint close-ups).
 import * as THREE from 'three';
 import { createMannequin } from '../character/skeleton.js';
 import { Animator, CLIPS } from '../character/animator.js';
@@ -407,8 +408,10 @@ export default async function (app) {
           if (P.has('fixedcam')) return;
           const k = P.has('lockcam') ? 1 : 1 - Math.exp(-rawDt * 6);   // lockcam: glued to the figure (fast gaits, dashes)
           camFollow.lerp(ch.group.position, camFollow.lengthSq() === 0 ? 1 : k);
-          const target = camFollow.clone().setY(camFollow.y + 1.0);
-          app.camera.position.copy(target).addScaledVector(vd, camDist);
+          // hooks.focus = () => Vector3 | null: frame a joint instead of the body (arm/wrist close-ups)
+          const focus = hooks.focus?.();
+          const target = focus ?? camFollow.clone().setY(camFollow.y + 1.0);
+          app.camera.position.copy(target).addScaledVector(focus ? (hooks.focusDir ?? vd) : vd, focus ? (hooks.focusDist ?? 1.2) : camDist);
           app.camera.lookAt(target);
           if (app.camera.fov !== view.fov) { app.camera.fov = view.fov; app.camera.updateProjectionMatrix(); }
         },
