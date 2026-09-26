@@ -7,7 +7,7 @@
 //          &mesh=char (real character instead of the clay mannequin)   &kind=bandit
 //   ?scene=anim&loco=5.2&strip=cycle&n=8   one gait cycle as a filmstrip (dir=, combat=1, armed=0)
 //   ?scene=anim&loco=5.2&dir=fwd|back|left|right|fl|fr&combat=1&armed=0&turn=1.5   live locomotion
-//          &strobe=1  stroboscopic trail of the gait (planted feet must overlap exactly)
+//          &strobe=1  stroboscopic trail of the gait (planted feet must overlap exactly)   &lockcam=1  camera glued to the figure
 //   ?scene=anim&ground=terrain             use the real terrain (foot IK on slopes)
 //   ?scene=anim&duel=enemyHeavy            hero vs bandit: the bandit plays the clip, the hero blocks/parries
 //   ?scene=anim                            showreel: cycles every combat clip
@@ -405,7 +405,7 @@ export default async function (app) {
         },
         lateUpdate(dt, t, a, rawDt) {
           if (P.has('fixedcam')) return;
-          const k = 1 - Math.exp(-rawDt * 6);
+          const k = P.has('lockcam') ? 1 : 1 - Math.exp(-rawDt * 6);   // lockcam: glued to the figure (fast gaits, dashes)
           camFollow.lerp(ch.group.position, camFollow.lengthSq() === 0 ? 1 : k);
           const target = camFollow.clone().setY(camFollow.y + 1.0);
           app.camera.position.copy(target).addScaledVector(vd, camDist);

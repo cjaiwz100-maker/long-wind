@@ -65,10 +65,11 @@ export const RH_HANG = hand([-0.215, 0.83, 0.03], [-0.03, -1, 0.08], [1, 0, 0.05
 // Sword vocabulary (right hand)
 // ---------------------------------------------------------------------------------------------------------
 /** Relaxed carry: blade angled down-forward beside the right leg. */
-export const SW_CARRY = sw([-0.23, 0.8, 0.06], nrm([-0.12, -0.8, 0.58]), ortho(nrm([-0.12, -0.8, 0.58]), [0, -0.6, -0.8]));   // 垂剑: loose fist by the thigh, tip hanging down-forward
-/** Ready: sword hand low by the right hip, the blade slanting down-forward toward the opponent's feet — relaxed and
- *  unposed (every cut starts from low and whips up). */
-export const SW_DRAG = sw([-0.24, 0.73, 0.14], nrm([-0.2, -0.6, 0.77]), ortho(nrm([-0.2, -0.6, 0.77]), [0, -0.6, -0.8]));
+export const SW_CARRY = sw([-0.23, 0.8, 0.08], nrm([-0.12, -0.62, 0.78]), ortho(nrm([-0.12, -0.62, 0.78]), [0, -0.6, -0.8]));   // 垂剑: loose fist by the thigh, tip hanging down-forward (clear of the ground)
+/** Ready: sword hand low by the right hip, the blade slanting down-forward at the opponent's knees — relaxed but
+ *  alive (every cut starts from low and whips up). The tip rides ~0.4 m above the ground: the old toward-the-feet
+ *  angle scraped the floor in the crouched stance and read as a sword too heavy to lift. */
+export const SW_DRAG = sw([-0.24, 0.75, 0.17], nrm([-0.17, -0.36, 0.92]), ortho(nrm([-0.17, -0.36, 0.92]), [0, -0.6, -0.8]));
 /** 中平 guard: blade forward-up toward the opponent's throat, forearm forward. */
 export const SW_GUARD = sw([-0.12, 1.16, 0.46], [0.08, 0.22, 0.97], [0.1, -0.97, 0.2]);   // 中平剑: arm ~70% extended, tip at the throat
 

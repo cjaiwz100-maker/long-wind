@@ -18,9 +18,11 @@ import { createSkeleton } from './skeleton.js';
 import { LAYERS } from '../core/globals.js';
 import { createBakedLayer } from './bakedAnim.js';
 import { GRIP_R } from './ik.js';
+import { retargetMixamo } from './mixamoAnims.js';
 
 const loader = new GLTFLoader();
 const cache = new Map();
+const mxCache = new Map();   // retargeted Mixamo clips per (model, clip list): tracks address bones by name, so instances share them
 
 /** Contract bone → Mixamo bone (prefix stripped). */
 export const MIXAMO_MAP = {
@@ -135,7 +137,7 @@ function autoSkin(mesh, W) {
  * @param {object} ch  character from createCharacter()
  * @param {string} url GLB with a Mixamo-named skeleton in a T-pose
  */
-export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixamorig:', baked = null, extraAnims = [] } = {}) {
+export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixamorig:', baked = null, extraAnims = [], mixamo = null } = {}) {
   const gltf = await loadGLB(url);
   // clips borrowed from another Tripo export (same Mixamo skeleton): cloned, with the pelvis height rescaled by the two
   // bodies' mean standing hip height ('idle' in both)
@@ -213,6 +215,13 @@ export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixa
 
   // ---- rest orientations (world, relative to the character group) ----
   const groupInv = new THREE.Matrix4().copy(ch.group.matrixWorld).invert();
+
+  // ---- Mixamo mocap (assets/anims/mixamo.glb) retargeted onto this skeleton while it is still at rest (per model) ----
+  if (mixamo?.keys?.length) {
+    const ck = `${url}|${mixamo.keys.join(',')}`;
+    if (!mxCache.has(ck)) mxCache.set(ck, loadGLB(mixamo.url).then((pack) => retargetMixamo(pack, scene, mb, groupInv, mixamo.keys)));
+    try { animations.push(...await mxCache.get(ck)); } catch (e) { console.warn('[skin] mixamo clips failed', e); }
+  }
   const pairs = [];
   for (const [rn, mn] of Object.entries(map)) {
     const rb = rest.bones[rn], b = mb(mn), live = ch.rig.bones[rn];
@@ -263,12 +272,19 @@ export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixa
   const restLocal = [];
   scene.traverse((o) => { if (o.isBone) restLocal.push([o, o.quaternion.clone(), o.position.clone()]); });
   const rFingers = new Set(); mHand?.traverse((o) => { if (o !== mHand && o.isBone) rFingers.add(o); });
+  const lFingers = new Set(); mb('LeftHand')?.traverse((o) => { if (o !== mb('LeftHand') && o.isBone) lFingers.add(o); });
   // the sword arm (shoulder → hand): body-only layers keep the animator's world rotations for it
   const armPairs = pairs.filter((p) => ['RightShoulder', 'RightArm', 'RightForeArm', 'RightHand'].some((n) => p.bone === mb(n)));
   const armSet = new Set(armPairs.map((p) => p.bone));
-  for (const p of armPairs) p.wq = new THREE.Quaternion();
-  function reseatArm(w) {
-    for (const p of armPairs) {
+  // the free arm too, for 'arms' layers (a source whose off hand does something the character never should)
+  const lArmPairs = pairs.filter((p) => ['LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand'].some((n) => p.bone === mb(n)));
+  const lArmSet = new Set(lArmPairs.map((p) => p.bone));
+  for (const p of [...armPairs, ...lArmPairs]) p.wq = new THREE.Quaternion();
+  // pelvis and legs: 'upper' layers (a guard held while walking) leave them to the gait
+  const legSet = new Set();
+  for (const n of ['Hips', 'LeftUpLeg', 'RightUpLeg']) mb(n)?.traverse((o) => { if (o.isBone && (n === 'Hips' ? o === mb('Hips') : true)) legSet.add(o); });
+  function reseatArm(w, mask) {
+    for (const p of mask === 'arms' ? [...armPairs, ...lArmPairs] : mask === 'left' ? lArmPairs : armPairs) {
       p.bone.parent.getWorldQuaternion(qParent).premultiply(qG);
       _q.copy(qParent.invert().multiply(_q2.copy(p.wq)));
       p.bone.quaternion.slerp(_q, w);
@@ -276,7 +292,7 @@ export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixa
     }
   }
   const layer = baked && animations.length
-    ? createBakedLayer(scene, animations, baked, { mb, noTrack: (n) => rFingers.has(n), armOut: (n) => armSet.has(n), onMasked: reseatArm }) : null;
+    ? createBakedLayer(scene, animations, baked, { mb, noTrack: (n, spec) => rFingers.has(n) || (spec.jianzhi && lFingers.has(n)), armOut: (n, mask) => (mask === 'upper' ? legSet.has(n) : (mask !== 'left' && armSet.has(n)) || ((mask === 'arms' || mask === 'left') && lArmSet.has(n))), onMasked: reseatArm }) : null;
   // the blade axis in the model hand's frame: rig blade = q_rig·GRIP_R·Z, q_rig = q_model·off⁻¹
   const handPair = pairs.find((p) => p.bone === mHand);
   const bladeInHand = handPair ? new THREE.Vector3(0, 0, 1).applyQuaternion(handPair.off.clone().invert().multiply(GRIP_R)) : null;
@@ -296,6 +312,22 @@ export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixa
     _want.copy(_bw).addScaledVector(fa, -_bw.dot(fa));
     if (_want.lengthSq() < 1e-6) return;
     _want.normalize().multiplyScalar(Math.sin(beta)).addScaledVector(fa, Math.cos(beta));
+    _qd.setFromUnitVectors(_bw, _want);
+    _qd.slerp(_q.identity(), 1 - w);
+    _qh.premultiply(_qd);
+    mHand.parent.getWorldQuaternion(qParent);
+    mHand.quaternion.copy(qParent.invert().multiply(_qh));
+    mHand.updateWorldMatrix(false, false);
+  }
+  // A two-handed pole (spear) over a take shot holding a rifle or staff: the shaft leaves the right fist through the left
+  const mLHand = mb('LeftHand'), _lh = new THREE.Vector3();
+  function solvePole(w) {
+    mHand.getWorldPosition(_wr); mLHand.getWorldPosition(_lh);
+    _want.subVectors(_lh, _wr);
+    if (_want.lengthSq() < 0.01) return;
+    _want.normalize();
+    mHand.getWorldQuaternion(_qh);
+    _bw.copy(bladeInHand).applyQuaternion(_qh);
     _qd.setFromUnitVectors(_bw, _want);
     _qd.slerp(_q.identity(), 1 - w);
     _qh.premultiply(_qd);
@@ -353,8 +385,12 @@ export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixa
         }
         p.bone.updateWorldMatrix(false, false);   // this bone only: children are refreshed once, below
       }
-      const bw = layer ? layer.update(dt, ch.rig.anim) : null;
+      // mocap actions carry their own travel: the animator's root motion follows the take (contract units)
+      const an = ch.rig.anim;
+      if (layer && an && !an.rootSource) an.rootSource = (clip, t, out) => (layer.rootAt(clip, t, out) ? (out.multiplyScalar(1 / (an.solver?.s || 1)), true) : false);
+      const bw = layer ? layer.update(dt, an) : null;
       if (bw && bw.w > 0 && ch.sword?.drawn && bladeInHand && bw.grip > 0) solveGrip(bw.grip);
+      if (bw && bw.pole > 0 && ch.sword?.drawn && bladeInHand && mLHand) solvePole(bw.pole);
       const fl = Math.abs(skin.flinch) > 0.004 && skin.flinchAxis;
       if (fl) applyFlinch();
       if ((bw && bw.w > 0) || fl) rigFromModel();

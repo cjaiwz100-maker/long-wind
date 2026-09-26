@@ -1,0 +1,382 @@
+{
+ "ssIdle": {
+  "num": "123100901",
+  "desc": "Sword And Shield Idle"
+ },
+ "ssSlash": {
+  "num": "122780901",
+  "desc": "Sword And Shield Slash (combo)"
+ },
+ "ssCrossSlash": {
+  "num": "122790901",
+  "desc": "Sword And Shield Cross Slash"
+ },
+ "ssPowerSlash": {
+  "num": "122800901",
+  "desc": "Sword And Shield Power Slash"
+ },
+ "ssDownSlash": {
+  "num": "122770901",
+  "desc": "Sword And Shield Downward Slash"
+ },
+ "ssHighAttack": {
+  "num": "122970901",
+  "desc": "Sword And Shield High Attack"
+ },
+ "ssLowAttack": {
+  "num": "122980901",
+  "desc": "Sword And Shield Low Attack"
+ },
+ "ssJumpAttack": {
+  "num": "122960901",
+  "desc": "Sword And Shield Jump Attack"
+ },
+ "ssCrouchSlash": {
+  "num": "122900901",
+  "desc": "Sword And Shield Crouch Slash"
+ },
+ "oneHandCombo": {
+  "num": "128120901",
+  "desc": "One Handed Sword Combo Attack"
+ },
+ "inwardSlash": {
+  "num": "104990901",
+  "desc": "Inward Slashing With A Sword Standing Stable"
+ },
+ "outwardSlash": {
+  "num": "104990902",
+  "desc": "Outward Slashing With A Sword Standing Stable"
+ },
+ "runSword": {
+  "num": "116470901",
+  "desc": "Running With A Sword In The Right Hand"
+ },
+ "drawSword": {
+  "num": "115270901",
+  "desc": "Withdrawing A Sword"
+ },
+ "reactLargeFront": {
+  "num": "128670939",
+  "desc": "Standing React Large From Front"
+ },
+ "fallBackDeath": {
+  "num": "128180901",
+  "desc": "Dying Falling Backward"
+ },
+ "quickRoll": {
+  "num": "120430901",
+  "desc": "Quick Roll To Run"
+ },
+ "thrustSlash": {
+  "num": "115180901",
+  "desc": "Thrust And Slash With Blade"
+ },
+ "sheathSword": {
+  "num": "115270902",
+  "desc": "Sheathing A Sword"
+ },
+ "ssPowerUp": {
+  "num": "123050901",
+  "desc": "Sword And Shield Powering Up"
+ },
+ "ssCast": {
+  "num": "123030901",
+  "desc": "Sword And Shield Spell Casting"
+ },
+ "ssBlockIdle": {
+  "num": "122820901",
+  "desc": "Sword And Shield Block Idle"
+ },
+ "ssBlockedImpact": {
+  "num": "122840901",
+  "desc": "Sword And Shield Blocked Impact"
+ },
+ "ssHeadImpact": {
+  "num": "122860901",
+  "desc": "Sword And Shield Head Impact"
+ },
+ "ssImpact": {
+  "num": "122850901",
+  "desc": "Sword And Shield Unblocked Impact"
+ },
+ "ssDeathBack": {
+  "num": "123060901",
+  "desc": "Sword And Shield Falling Back Death"
+ },
+ "ssDeathFwd": {
+  "num": "123070901",
+  "desc": "Sword And Shield Falling Forward Death"
+ },
+ "ssWalk": {
+  "num": "122650901",
+  "desc": "Sword And Shield Walk"
+ },
+ "ssRun": {
+  "num": "122660901",
+  "desc": "Sword And Shield Run"
+ },
+ "ssWalkBack": {
+  "num": "122710901",
+  "desc": "Sword And Shield Backward Walk"
+ },
+ "ssStrafeL": {
+  "num": "122700901",
+  "desc": "Sword And Shield Left Strafe Walk"
+ },
+ "ssStrafeR": {
+  "num": "122690901",
+  "desc": "Sword And Shield Right Strafe Walk"
+ },
+ "ssIdleToBlock": {
+  "num": "122810901",
+  "desc": "Sword And Shield Idle To Block"
+ },
+ "ssKick": {
+  "num": "123020901",
+  "desc": "Sword And Shield Sparta Kick"
+ },
+ "ssHilt": {
+  "num": "123040901",
+  "desc": "Sword And Shield Hilt Melee"
+ },
+ "sprintRoll": {
+  "num": "120430902",
+  "desc": "Sprint To Forward Roll"
+ },
+ "dodgeBack": {
+  "num": "137170901",
+  "desc": "Jumping Backwards Dodge"
+ },
+ "diveRoll": {
+  "num": "116440901",
+  "desc": "Dive Roll From Standing"
+ },
+ "stepBack": {
+  "num": "127690915",
+  "desc": "Dodge Backward With Bow"
+ },
+ "stepLeft": {
+  "num": "127690917",
+  "desc": "Dodge Left With Bow"
+ },
+ "stepRight": {
+  "num": "127690918",
+  "desc": "Dodge Right With Bow"
+ },
+ "stepFwd": {
+  "num": "127690916",
+  "desc": "Dodge Forward With Bow"
+ },
+ "reactLargeBack": {
+  "num": "128670938",
+  "desc": "Standing React Large From Back"
+ },
+ "reactLargeLeft": {
+  "num": "128670940",
+  "desc": "Standing React Large From Left"
+ },
+ "reactLargeRight": {
+  "num": "128670941",
+  "desc": "Standing React Large From Right"
+ },
+ "reactSmallFront": {
+  "num": "128670943",
+  "desc": "Standing React Small From Front"
+ },
+ "reactSmallBack": {
+  "num": "128670942",
+  "desc": "Standing React Small From Back"
+ },
+ "fallFwdDeath": {
+  "num": "128170901",
+  "desc": "Dying Falling Forward"
+ },
+ "flyingBackDeath": {
+  "num": "128200901",
+  "desc": "Dying Flying Backward"
+ },
+ "deathStandBack": {
+  "num": "128670934",
+  "desc": "Standing React Death Backward"
+ },
+ "deathStandFwd": {
+  "num": "128670935",
+  "desc": "Standing React Death Forward"
+ },
+ "fallingDown": {
+  "num": "136870901",
+  "desc": "Knocked Over And Falling To The Ground"
+ },
+ "knockedOut": {
+  "num": "110720901",
+  "desc": "Knocked Out Falling To Back"
+ },
+ "getUp": {
+  "num": "137190901",
+  "desc": "Getting Up From Being Knocked Down"
+ },
+ "getUpBack": {
+  "num": "110690901",
+  "desc": "Getting Up From Back"
+ },
+ "getUpStomach": {
+  "num": "110700901",
+  "desc": "Getting Up From Stomach"
+ },
+ "axeIdle": {
+  "num": "128650908",
+  "desc": "Standing Idle With Axe"
+ },
+ "axeWalk": {
+  "num": "128650932",
+  "desc": "Walking Forward With Axe"
+ },
+ "axeRun": {
+  "num": "128650926",
+  "desc": "Running Forward With Axe"
+ },
+ "axeWalkBack": {
+  "num": "128650931",
+  "desc": "Walking Backwards With Axe"
+ },
+ "axeWalkL": {
+  "num": "128650933",
+  "desc": "Walking Left With Axe"
+ },
+ "axeWalkR": {
+  "num": "128650934",
+  "desc": "Walking Right With Axe"
+ },
+ "axeDown": {
+  "num": "128650912",
+  "desc": "Downward Attack With Axe"
+ },
+ "axeHorizontal": {
+  "num": "128650913",
+  "desc": "Right To Left Attack With Axe"
+ },
+ "axeSpin": {
+  "num": "128650914",
+  "desc": "Left To Right Spin Attack With Axe"
+ },
+ "axeCombo1": {
+  "num": "128650918",
+  "desc": "Two Hit Combo Attack With Axe"
+ },
+ "axeCombo2": {
+  "num": "128650919",
+  "desc": "Three Hit Combo Attack With Axe"
+ },
+ "axeCombo3": {
+  "num": "128650920",
+  "desc": "Two Hit Combo Attack With Axe b"
+ },
+ "axeBackhand": {
+  "num": "128650911",
+  "desc": "Backhanded Upward Attack With Axe"
+ },
+ "axeBattlecry": {
+  "num": "128650927",
+  "desc": "Battlecry With Axe"
+ },
+ "axeHitLeft": {
+  "num": "128650922",
+  "desc": "Hit Reaction From The Left With Axe"
+ },
+ "axeHitRight": {
+  "num": "128650923",
+  "desc": "Hit Reaction From The Right With Axe"
+ },
+ "axeHitGut": {
+  "num": "128650924",
+  "desc": "Hit Reaction From Gut Shot With Axe"
+ },
+ "axeBlock": {
+  "num": "128650903",
+  "desc": "Blocking An Attack With Axe"
+ },
+ "axeKick": {
+  "num": "128650916",
+  "desc": "Kick With Right Foot Holding Axe"
+ },
+ "bowIdle": {
+  "num": "127690908",
+  "desc": "Standing Idle With Bow"
+ },
+ "bowAimIdle": {
+  "num": "127690973",
+  "desc": "Aiming Idle With Bow"
+ },
+ "bowRecoil": {
+  "num": "127690924",
+  "desc": "Standing Aim Fire Arrow"
+ },
+ "bowShoot": {
+  "num": "112390901",
+  "desc": "Shooting With Bow And Arrow"
+ },
+ "bowOverdraw": {
+  "num": "127690920",
+  "desc": "Charging Bow For Powershot"
+ },
+ "bowWalk": {
+  "num": "127690936",
+  "desc": "Walking Forward With Bow"
+ },
+ "bowRun": {
+  "num": "127690928",
+  "desc": "Running Forward With Bow"
+ },
+ "bowWalkBack": {
+  "num": "127690934",
+  "desc": "Walking Backwards With Bow"
+ },
+ "bowWalkL": {
+  "num": "127690938",
+  "desc": "Walking Left With Bow"
+ },
+ "bowWalkR": {
+  "num": "127690940",
+  "desc": "Walking Right With Bow"
+ },
+ "bowHit": {
+  "num": "127690923",
+  "desc": "Hit Reaction From The Front With Bow"
+ },
+ "bowDeath": {
+  "num": "127690902",
+  "desc": "Death Reaction Falling Backwards With Bow"
+ },
+ "bowEquip": {
+  "num": "127690906",
+  "desc": "Equipping Bow"
+ },
+ "bayonetStab": {
+  "num": "104800901",
+  "desc": "Advancing And Stabbing With Rifle Bayonet Or Spear"
+ },
+ "bayonetSlash": {
+  "num": "104820901",
+  "desc": "Slashing Forward With A Bayonet"
+ },
+ "staffSmash": {
+  "num": "104760901",
+  "desc": "Smash With Back Of Rifle Or Staff"
+ },
+ "bowShotFull": {
+  "compose": [
+   [
+    "bowShoot",
+    0.9,
+    2.95
+   ],
+   [
+    "bowRecoil",
+    0.12,
+    0.7
+   ]
+  ],
+  "blend": 0.12,
+  "desc": "reach to the quiver, nock, draw (Shooting Arrow) \u2192 loose (Standing Aim Recoil)"
+ }
+}

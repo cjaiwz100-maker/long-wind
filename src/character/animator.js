@@ -180,6 +180,9 @@ export class Animator {
     this.rootMotion = new THREE.Vector3();
     this.rootYaw = 0;
     this._out = { rootMotion: this.rootMotion, rootYaw: 0, events: this.events };
+    /** Optional (clip, t, out) → bool: an external root path for an action clip, e.g. a model skin's mocap take
+     *  (modelSkin wires it); out = cumulative travel at clip time t, contract units, clip-start frame. */
+    this.rootSource = null;
     // additive state
     this.clock = 0;
     this.exertion = 0;
@@ -235,7 +238,11 @@ export class Animator {
   lookAt(p) { if (p) { this.look.target.copy(p); this.look.has = true; } else this.look.has = false; }
 
   /** Cumulative authored root motion of `name` at clip time t (local metres) → returns yaw (rad). */
-  sampleRoot(name, t, out = new THREE.Vector3()) { const c = COMPILED[name]; if (!c) { out.set(0, 0, 0); return 0; } return c.rootAt(t, out); }
+  sampleRoot(name, t, out = new THREE.Vector3()) {
+    const c = COMPILED[name]; if (!c) { out.set(0, 0, 0); return 0; }
+    if (this.rootSource?.(c, t, out)) return 0;
+    return c.rootAt(t, out);
+  }
 
   /** Pure evaluation: pose the rig at clip time t (feet as authored, no world locks, no additive layers). */
   poseAt(name, t, { lookAt = null } = {}) {
@@ -290,8 +297,9 @@ export class Animator {
       }
       if (!act.loop || t >= prev) this._fireEvents(c, prev, t);
       // root motion (authored, in the clip-start frame) → local frame of this instant
-      if (c.root) {
-        const yaw1 = c.rootAt(t, _v2);
+      const ext = !!this.rootSource?.(c, t, _v2);   // a skin's mocap take supplies the path (contract units)
+      if (c.root || ext) {
+        const yaw1 = ext ? 0 : c.rootAt(t, _v2);
         _v.copy(_v2).sub(act.root);
         _v.applyAxisAngle(UP, -act.yaw);
         this.rootMotion.copy(_v).multiplyScalar(this.solver.s);   // authored in contract units → this rig's size

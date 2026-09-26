@@ -346,7 +346,8 @@ export class Gait {
     }
     // right arm: sword carried low when walking, trailed back when running; unarmed swings freely
     {
-      const a = p.arm * sw1 * lerp(0.5, 0.35, runW) * armed + p.arm * sw1 * (1 - armed);
+      // the sword arm pumps with the stride too (a damped swing read as an arm locked to the hip at a run)
+      const a = p.arm * sw1 * lerp(0.5, 0.62, runW) * armed + p.arm * sw1 * (1 - armed);
       pendulumArm(_v, _q2, -1, a, p.elbow * (1 - 0.4 * armed));
       if (armed < 0.99) pose.handQ[1].slerp(_q2.premultiply(qc), k * (1 - armed));
       const target = _v.applyQuaternion(qc).addScaledVector(pc, 1 / s);
@@ -355,7 +356,7 @@ export class Gait {
         // blade: walk = down-forward carry; run/sprint = trailing back-down, flat to the wind
         // (ref 黑神话·钟馗) always a forward grip: the tip hangs down-forward from a loose fist and levels out a little
         // as the pace rises. Never trailed backwards — with the knuckles forward that reads as a reverse grip.
-        const dW = _v.set(-0.12, -0.72, 0.68).lerp(_v2.set(-0.16, -0.46, 0.87), runW).normalize();
+        const dW = _v.set(-0.12, -0.72, 0.68).lerp(_v2.set(-0.17, -0.6, 0.78), runW).normalize();   // a run keeps the tip hanging: level, it poked out ahead like a lance
         dW.applyQuaternion(qc);
         const eW = _v2.set(0.0, -0.68, -0.73).lerp(_v2.clone().set(0.0, -0.87, -0.49), runW).normalize().applyQuaternion(qc);
         // weapon frame → hand frame is done by the solver-side convention in the pose (handQ is the hand frame)

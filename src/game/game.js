@@ -84,13 +84,14 @@ export class Game {
     this.input = new Input(app.renderer.domElement);
     this.camera = new CombatCamera(app, { heightAt: this.heightAt, colliders: app.world.colliders });
     this.coordinator = new Coordinator({ maxAttackers: 2 });
-    // record mode (for trailers): H hides the HUD, O a slow orbit around the hero, T slow motion (×0.35); ?hud=0
+    // record mode (for trailers): H hides the HUD, O a slow orbit around the hero, V a rising crane shot, T slow motion (×0.35); ?hud=0
     const hud = document.getElementById('hud');
-    if (hud && this.params.get('hud') === '0') hud.style.visibility = 'hidden';
+    if (hud && this.params.get('hud') === '0') hud.style.opacity = '0';   // opacity: children set their own visibility
     addEventListener('keydown', (e) => {
       if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.code === 'KeyH' && hud) hud.style.visibility = hud.style.visibility === 'hidden' ? '' : 'hidden';
-      else if (e.code === 'KeyO') this.camera.toggleOrbit();
+      if (e.code === 'KeyH' && hud) hud.style.opacity = hud.style.opacity === '0' ? '' : '0';
+      else if (e.code === 'KeyO') this.camera.toggleOrbit('orbit');
+      else if (e.code === 'KeyV') this.camera.toggleOrbit('crane');
       else if (e.code === 'KeyT') app.time.userScale = app.time.userScale < 1 ? 1 : 0.35;
     });
     this.combat = new Combat(this);
@@ -144,6 +145,10 @@ export class Game {
       this.director.begin(Number.isFinite(wave) ? clamp(wave - 1, 0, WAVES.length - 1) : 0);
       this.director.t = 0.9;
       this.player.setDrawn(true);
+      this.camera.setMode('follow', { heading: this.camera.sunHeading, force: true });
+    }
+    else if (startState === 'explore') {
+      this.director.explore();
       this.camera.setMode('follow', { heading: this.camera.sunHeading, force: true });
     }
     this.camera.snap();

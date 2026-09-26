@@ -1,0 +1,107 @@
+<!doctype html><meta charset="utf-8"><title>Mixamo → GLB</title><body><script type="module">
+// Dev tool (driven by tools/mixamo/convert.mjs): Mixamo FBX takes (X Bot, without skin) → one animation-only GLB
+// holding the rest (T-pose) skeleton in metres plus every clip, named by its manifest key. Runtime retargeting onto
+// each model skin happens in src/character/mixamoAnims.js.
+import * as THREE from 'three';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+window.THREE = THREE; window.GLTFLoader = GLTFLoader;   // for ad-hoc inspection of the pack from the console
+const CM = 0.01;
+// lossy keyframe reduction: drop keys the neighbours reproduce (slerp within ~0.3°, lerp within 3 mm)
+function reduce(t) {
+  const n = t.times.length, st = t.getValueSize(); if (n < 3) return t;
+  const isQ = st === 4, keep = [0];
+  const q0 = new THREE.Quaternion(), q1 = new THREE.Quaternion(), qi = new THREE.Quaternion(), qm = new THREE.Quaternion();
+  const tol = isQ ? Math.cos((0.3 * Math.PI / 180) / 2) : 0.003;
+  let a = 0;
+  for (let i = 2; i < n; i++) {
+    // can keys a..i be spanned by one segment? check every key strictly between
+    let ok = true;
+    for (let j = a + 1; j < i && ok; j++) {
+      const u = (t.times[j] - t.times[a]) / (t.times[i] - t.times[a]);
+      if (isQ) {
+        q0.fromArray(t.values, a * 4); q1.fromArray(t.values, i * 4); qi.fromArray(t.values, j * 4);
+        qm.copy(q0).slerp(q1, u);
+        ok = Math.abs(qm.dot(qi)) >= tol;
+      } else {
+        for (let c = 0; c < st && ok; c++) { const v = t.values[a * st + c] + (t.values[i * st + c] - t.values[a * st + c]) * u; ok = Math.abs(v - t.values[j * st + c]) <= tol; }
+      }
+    }
+    if (!ok) { keep.push(i - 1); a = i - 1; }
+  }
+  keep.push(n - 1);
+  const times = new Float32Array(keep.length), values = new Float32Array(keep.length * st);
+  keep.forEach((k, i) => { times[i] = t.times[k]; for (let c = 0; c < st; c++) values[i * st + c] = t.values[k * st + c]; });
+  return new t.constructor(t.name, times, values);
+}
+window.convertAll = async (manifest, ship = null) => {   // ship: keys to pack (default all; composite parts may be load-only)
+  const loader = new FBXLoader();
+  let skel = null; const clips = []; const log = [];
+  const raw = {};   // key → { clip, hips }: loaded takes, for composites
+  const composites = [];
+  for (const [key, e] of Object.entries(manifest)) {
+    if (e.compose) { composites.push([key, e]); continue; }
+    const o = await loader.loadAsync(`/tools/mixamo/src/${e.num}.fbx`);
+    const hips = o.getObjectByName('mixamorigHips');
+    if (!skel) {
+      skel = hips.clone(true);
+      skel.traverse((b) => b.position.multiplyScalar(CM));
+    }
+    const src = o.animations[0];
+    const tracks = [];
+    for (const t of src.tracks) {
+      const [node, prop] = [t.name.slice(0, t.name.lastIndexOf('.')), t.name.slice(t.name.lastIndexOf('.') + 1)];
+      if (/^mixamorigRightHand./.test(node)) continue;   // the sword hand's fingers always hold the grip (modelSkin)
+      if (prop === 'quaternion') tracks.push(reduce(t));
+      else if (prop === 'position' && node === 'mixamorigHips') { const c = t.clone(); for (let i = 0; i < c.values.length; i++) c.values[i] *= CM; tracks.push(reduce(c)); }
+    }
+    const clip = new THREE.AnimationClip(key, src.duration, tracks);
+    clip.optimize();
+    raw[key] = new THREE.AnimationClip(key, src.duration, tracks.map((t) => t.clone()));
+    if (!ship || ship.includes(key)) clips.push(clip);
+    log.push(`${key} ${src.duration.toFixed(2)}s ${tracks.length} tracks`);
+  }
+  // composites: segments of loaded takes played back to back, each seam cross-faded over `blend` seconds
+  //   "key": { "compose": [["take", t0, t1], …], "blend": 0.12 }   (every part must also be in the manifest)
+  for (const [key, e] of composites) {
+    const fps = 30, parts = e.compose.map(([k, a, b]) => ({ clip: raw[k] ?? (() => { throw new Error('compose: load ' + k); })(), a, b }));
+    const dur = parts.reduce((s, p) => s + (p.b - p.a), 0), n = Math.round(dur * fps) + 1, bl = e.blend ?? 0.12;
+    const times = Float32Array.from({ length: n }, (_, i) => i / fps);
+    const names = parts[0].clip.tracks.map((t) => t.name);
+    const tracks = [];
+    for (const name of names) {
+      const its = parts.map((p) => p.clip.tracks.find((t) => t.name === name)?.createInterpolant());
+      const size = parts[0].clip.tracks.find((t) => t.name === name).getValueSize(), isQ = size === 4;
+      const vals = new Float32Array(n * size), qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), va = new THREE.Vector3(), vb = new THREE.Vector3();
+      const off = parts.map(() => new THREE.Vector3());   // hips: each part continues from where the last one stood
+      if (!isQ) for (let j = 1; j < parts.length; j++) {
+        const end = new THREE.Vector3().fromArray(its[j - 1].evaluate(parts[j - 1].b)).add(off[j - 1]);
+        off[j].copy(end).sub(new THREE.Vector3().fromArray(its[j].evaluate(parts[j].a))); off[j].y = 0;
+      }
+      for (let i = 0; i < n; i++) {
+        let t = times[i], j = 0;
+        while (j < parts.length - 1 && t > parts[j].b - parts[j].a) { t -= parts[j].b - parts[j].a; j++; }
+        const at = (k, tt) => its[k] ? its[k].evaluate(parts[k].a + tt).slice() : null;
+        let v = at(j, t);
+        // cross-fade into this part from the previous part's end pose over the first `bl` seconds
+        if (j > 0 && t < bl && its[j - 1]) {
+          const w = t / bl, pv = at(j - 1, parts[j - 1].b - parts[j - 1].a);
+          if (isQ) { qa.fromArray(pv); qb.fromArray(v); qa.slerp(qb, w * w * (3 - 2 * w)); v = qa.toArray(); }
+          else { va.fromArray(pv).add(off[j - 1]); vb.fromArray(v).add(off[j]); va.lerp(vb, w); v = va.toArray(); }
+        } else if (!isQ) v = vb.fromArray(v).add(off[j]).toArray();
+        vals.set(v, i * size);
+      }
+      tracks.push(reduce(new (isQ ? THREE.QuaternionKeyframeTrack : THREE.VectorKeyframeTrack)(name, times, vals)));
+    }
+    clips.push(new THREE.AnimationClip(key, dur, tracks));
+    log.push(`${key} ${dur.toFixed(2)}s composite of ${e.compose.map((c) => c[0]).join(' + ')}`);
+  }
+  const scene = new THREE.Scene(); scene.add(skel);
+  const glb = await new GLTFExporter().parseAsync(scene, { binary: true, animations: clips });
+  const bytes = new Uint8Array(glb);
+  let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return { b64: btoa(s), log };
+};
+window.__ok = true;
+</script>

@@ -10,3 +10,6 @@ docs/ref/
 # unused early character model
 public/assets/models/hero-wuxia.glb
 docs/ref-notes/
+recordings/
+# raw Mixamo downloads (FBX); the game ships only the packed, used subset (public/assets/anims/mixamo.glb)
+tools/mixamo/src/

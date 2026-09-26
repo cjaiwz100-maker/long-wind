@@ -34,10 +34,23 @@ const MODEL_SKINS = {
   assassin: 'assets/models/enemy-assassin.glb',
 };
 
-/** Baked clips inside a skin's GLB (Tripo Animate), per game clip; src = animation name prefix. See bakedAnim.js. */
-// enemies: the mocap walk/run, hit reactions, falls and deaths (their guard stance, strafes and attacks stay procedural)
-// mask 'body': the weapon arm stays with the animator (the Tripo presets are empty-handed: swung arms whipped the blade
-// round, and the flinching hands drove it through the head)
+/**
+ * Baked clips per game clip, layered over the procedural animator (bakedAnim.js): src = an animation name prefix in the
+ * skin's GLB (Tripo Animate), or 'mx:<key>' = a Mixamo mocap take (tools/mixamo → assets/anims/mixamo.glb, retargeted
+ * onto each skin at load by mixamoAnims.js). Actions map [t0, t1] of the take onto the game clip, with `key`/`keys`
+ * (the take's strike instants) landing mid hit window; travelling takes drive the root motion (their own footwork).
+ * mask 'body': the weapon arm stays with the animator (the Tripo presets are empty-handed: swung arms whipped the blade
+ * round, and the flinching hands drove it through the head); grip 'hand': the take was shot holding a weapon.
+ */
+// Falls, deaths and the get-up for everyone: the Tripo 'fall' preset curled into a kneeling heap and never lay down;
+// these topple and lie out, and the get-up starts from that lying pose.
+const FALLS = {
+  knockdown: { src: 'mx:fallBackDeath', t0: 0.12, t1: 1.75, fade: 0.08 },        // reel back, feet go up, flat on the back
+  getUp: { src: 'mx:getUp', t0: 0.15, t1: 2.45, fade: 0.2 },                     // from the back: roll up, crouch, stand
+  death: { src: 'mx:fallFwdDeath', t0: 0.05, t1: 2.5, fade: 0.1 },               // folds at the knees, slumps forward
+  deathBack: { src: 'mx:fallBackDeath', t0: 0.05, t1: 2.2, fade: 0.1 },
+  deathLaunch: { src: 'mx:flyingBackDeath', t0: 0.1, t1: 2.9, fade: 0.12, root: false },   // gameplay throws the body
+};
 const ENEMY_BAKED = {
   walk: { src: 'walk', rate: 'speed', fade: 0.25, mask: 'body' },
   run: { src: 'run', rate: 'speed', fade: 0.2, mask: 'body' },
@@ -45,40 +58,118 @@ const ENEMY_BAKED = {
   hitFront: { src: 'hit_to_body_01', t0: 0.05, t1: 1.1, fade: 0.06, mask: 'body' },
   hitBack: { src: 'hit_to_body_01', t0: 0.05, t1: 1.1, fade: 0.06, mask: 'body' },
   hitHeavy: { src: 'hit_to_head', t0: 0.05, t1: 1.6, fade: 0.06, mask: 'body' },
-  knockdown: { src: 'fall', t0: 0.9, t1: 2.3, fade: 0.08 },   // straight into the collapse (the blow already staggered him)
-  // the 'fall' preset's collapse (the 'defeat' preset is a standing, head-back slump: it never reaches the ground)
-  death: { src: 'fall', t0: 0.95, t1: 3.0, fade: 0.1 },
-  deathBack: { src: 'fall', t0: 0.95, t1: 3.0, fade: 0.1 },
-  deathLaunch: { src: 'fall', t0: 1.24, t1: 3.0, fade: 0.12 },
+  ...FALLS,
+};
+/** A looping take that follows the gait speed (locomotion). */
+const gait = (src, fade = 0.25, extra = {}) => ({ src, rate: 'speed', fade, grip: 'hand', ...extra });
+// bandits (and the heavy): a one-handed-axe fighter's mocap — the dao hangs low and heavy, every swing is a haymaker
+const BANDIT_BAKED = {
+  ...ENEMY_BAKED,
+  combatIdle: { src: 'mx:axeIdle', loop: true, fade: 0.3, grip: 'hand' },
+  walk: gait('mx:axeWalk'), run: gait('mx:axeRun', 0.2), sprint: gait('mx:axeRun', 0.2),
+  walkBack: gait('mx:axeWalkBack'), strafeL: gait('mx:axeWalkL'), strafeR: gait('mx:axeWalkR'),
+  enemyAttack1: { src: 'mx:axeHorizontal', t0: 0.35, t1: 1.75, key: 0.93, fade: 0.12, grip: 'hand' },   // R→L haymaker
+  enemyAttack2: { src: 'mx:axeSpin', t0: 0.3, t1: 1.8, key: 1.03, fade: 0.12, grip: 'hand' },            // spinning L→R
+  enemyHeavy: { src: 'mx:axeDown', t0: 0.05, t1: 1.9, key: 0.83, fade: 0.12, grip: 'hand' },             // overhead chop
+  enemyThrust: { src: 'mx:thrustSlash', t0: 0.1, t1: 1.6, key: 0.85, fade: 0.12, grip: 'hand', align: true },
+  block: { src: 'mx:axeBlock', loop: true, fade: 0.1, grip: 'hand', mask: 'upper' },
+  taunt: { src: 'mx:axeBattlecry', t0: 0, t1: 2.8, fade: 0.2, grip: 'hand' },
+  hitFront: { src: 'mx:axeHitGut', t0: 0, t1: 1.3, fade: 0.06, grip: 'hand' },
+};
+// the shieldman: sword-and-shield mocap (the rattan shield rides the left forearm through all of it)
+const SHIELD_BAKED = {
+  ...ENEMY_BAKED,
+  combatIdle: { src: 'mx:ssIdle', loop: true, fade: 0.3, grip: 'hand' },
+  walk: gait('mx:ssWalk'), run: gait('mx:ssRun', 0.2), sprint: gait('mx:ssRun', 0.2),
+  walkBack: gait('mx:ssWalkBack'), strafeL: gait('mx:ssStrafeL'), strafeR: gait('mx:ssStrafeR'),
+  shieldGuard: { src: 'mx:ssBlockIdle', loop: true, fade: 0.15, grip: 'hand', mask: 'upper' },   // held over the walk
+  blockHit: { src: 'mx:ssBlockedImpact', t0: 0, t1: 0.75, fade: 0.05, grip: 'hand' },
+  shieldBash: { src: 'mx:ssKick', t0: 0, t1: 1.15, key: 0.55, fade: 0.1, grip: 'hand' },   // shield up, boot in the gut
+  enemyAttack1: { src: 'mx:ssDownSlash', t0: 0, t1: 1.45, key: 0.6, fade: 0.12, grip: 'hand' },
+  enemyAttack2: { src: 'mx:ssCrossSlash', t0: 0.1, t1: 1.5, key: 0.83, fade: 0.12, grip: 'hand' },
+  hitFront: { src: 'mx:ssImpact', t0: 0, t1: 0.95, fade: 0.06, grip: 'hand' },
+  hitHeavy: { src: 'mx:ssHeadImpact', t0: 0, t1: 0.7, fade: 0.06, grip: 'hand' },
+};
+// the archer (blade sheathed, bow in the left hand): longbow mocap — reach to the quiver, nock, draw, loose
+const ARCHER_BAKED = {
+  ...ENEMY_BAKED,
+  idle: { src: 'mx:bowIdle', loop: true, fade: 0.3 }, combatIdle: { src: 'mx:bowIdle', loop: true, fade: 0.3 },
+  walk: gait('mx:bowWalk'), run: gait('mx:bowRun', 0.2), sprint: gait('mx:bowRun', 0.2),
+  'walk~free': gait('mx:bowWalk'), 'run~free': gait('mx:bowRun', 0.2), 'sprint~free': gait('mx:bowRun', 0.2),
+  walkBack: gait('mx:bowWalkBack'), strafeL: gait('mx:bowWalkL'), strafeR: gait('mx:bowWalkR'),
+  // reach to the quiver, nock, draw (the telegraph), loose on the clip's shootAt (a composite take, tools/mixamo)
+  bowShot: { src: 'mx:bowShotFull', t0: 0, t1: 2.63, sync: [[0.8, 1.9], [1.12, 2.31]], fade: 0.15 },
+  enemyKick: { src: 'mx:axeKick', t0: 0.2, t1: 1.5, key: 0.75, fade: 0.1, mask: 'arms' },
+  hitFront: { src: 'mx:bowHit', t0: 0, t1: 1.2, fade: 0.06 },
+  death: { src: 'mx:bowDeath', t0: 0, t1: 3.0, fade: 0.1 }, deathBack: { src: 'mx:bowDeath', t0: 0, t1: 3.0, fade: 0.1 },
+};
+// the spearman: bayonet / staff mocap, the shaft laid from fist to fist
+const SPEAR_BAKED = {
+  ...ENEMY_BAKED,
+  enemyThrust: { src: 'mx:bayonetStab', t0: 0.3, t1: 1.8, key: 1.0, fade: 0.12, grip: 'pole' },
+  spearJab2: { src: 'mx:bayonetSlash', t0: 0.2, t1: 1.9, keys: [0.75, 1.3], fade: 0.12, grip: 'pole' },
+};
+// the two bosses: the hero's sword mocap at enemy pacing (long windups: the telegraph)
+const DUEL_BAKED = {
+  enemyAttack1: { src: 'mx:ssSlash', t0: 0, t1: 1.4, key: 0.7, fade: 0.12, grip: 'hand', jianzhi: true },
+  enemyAttack2: { src: 'mx:inwardSlash', t0: 0.4, t1: 1.9, key: 1.2, fade: 0.12, grip: 'hand' },
+  enemyThrust: { src: 'mx:thrustSlash', t0: 0.1, t1: 1.6, key: 0.85, fade: 0.12, grip: 'hand', align: true },
+  enemyHeavy: { src: 'mx:ssJumpAttack', t0: 0, t1: 2.0, key: 1.2, fade: 0.12, grip: 'hand', jianzhi: true },
+  bossFlurry: { src: 'mx:oneHandCombo', t0: 0.5, t1: 3.5, keys: [1.0, 2.01, 3.0], fade: 0.12, grip: 'hand' },
+  bossDash: { src: 'mx:ssHighAttack', t0: 0.1, t1: 1.2, key: 0.57, fade: 0.1, grip: 'hand', jianzhi: true, align: true },
+  bossLeap: { src: 'mx:ssJumpAttack', t0: 0, t1: 2.2, key: 1.2, fade: 0.1, grip: 'hand', jianzhi: true },
+  bossQi: { src: 'mx:ssPowerSlash', t0: 0.5, t1: 2.1, fade: 0.1, grip: 'hand', jianzhi: true },
 };
 // the swordmaster borrows three bodies from the hero's library (EXTRA_ANIMS): a poised ready stance, the hands-on-hip
 // once-over (the sword arm keeps hanging the blade point-down), and the sword whirled round him for the second phase
 const MASTER_BAKED = {
   ...ENEMY_BAKED,
-  combatIdle: { src: 'A Chinese swordsman stands in a poised martial arts', loop: true, pingpong: true, fade: 0.3, mask: 'body' },
+  ...DUEL_BAKED,
+  // the poised horse stance, arms on the animator: the source holds its free hand over its mouth the whole loop
+  combatIdle: { src: 'A Chinese swordsman stands in a poised martial arts', loop: true, pingpong: true, fade: 0.3, mask: 'arms' },
   bossTaunt: { src: '自信地叉腰站立', t0: 0.3, t1: 3.2, fade: 0.25, mask: 'body' },
-  bossFlourish: { src: 'A swordsman whirls a sword in fast circles', t0: 1.6, t1: 4.0, fade: 0.2 },   // the whirl itself is 2.1–3.3 s
+  bossFlourish: { src: 'A swordsman whirls a sword in fast circles', t0: 1.6, t1: 4.0, fade: 0.2, mask: 'left' },   // the whirl itself is 2.1–3.3 s; the source's free hand hides the mouth
 };
 const EXTRA_ANIMS = { swordmaster: ['assets/models/hero-tripo.glb'] };
+/** Mixamo mocap pack (tools/mixamo): table entries with src 'mx:<key>' are retargeted from it (mixamoAnims.js). */
+const MIXAMO_PACK = 'assets/anims/mixamo.glb';
 const BAKED = {
-  bandit: ENEMY_BAKED, bandit_heavy: ENEMY_BAKED, spearman: ENEMY_BAKED, archer: ENEMY_BAKED, shieldman: ENEMY_BAKED, swordmaster: MASTER_BAKED,
-  assassin: ENEMY_BAKED,
+  bandit: BANDIT_BAKED, bandit_heavy: BANDIT_BAKED, spearman: SPEAR_BAKED, archer: ARCHER_BAKED, shieldman: SHIELD_BAKED, swordmaster: MASTER_BAKED,
+  assassin: { ...ENEMY_BAKED, ...DUEL_BAKED },
   hero: {
     idle: { src: 'idle', loop: true, fade: 0.35 },
     combatIdle: { src: 'A calm swordsman stands in a relaxed ready stance', loop: true, pingpong: true, fade: 0.3, mask: 'body' },   // sword arm: the stance's low blade (every cut ends there)
     walk: { src: 'walk', rate: 'speed', speed0: 1.16, fade: 0.25, mask: 'body' },
-    run: { src: 'run', rate: 'speed', speed0: 4.1, fade: 0.2, mask: 'body' },
-    sprint: { src: 'run', rate: 'speed', speed0: 4.1, fade: 0.2, mask: 'body' },
-    dodgeF: { src: 'A man facing forward does a fast forward somersault', t0: 0.42, t1: 1.9, fade: 0.08 },
-    dodgeB: { src: 'A man facing forward jumps quickly backward', t0: 0.45, t1: 1.35, fade: 0.08 },
+    // armed run: a take shot running with a sword in the right hand (the blade carried low and back, arm pumping)
+    run: { src: 'mx:runSword', rate: 'speed', fade: 0.2, grip: 'hand' },
+    sprint: { src: 'mx:runSword', rate: 'speed', fade: 0.2, grip: 'hand' },
+    // sheathed: both arms swing with the gait (the masked sword arm held a guard shape that read stiff and lopsided)
+    'walk~free': { src: 'walk', rate: 'speed', speed0: 1.16, fade: 0.25 },
+    'run~free': { src: 'run', rate: 'speed', speed0: 4.1, fade: 0.2 },
+    'sprint~free': { src: 'run', rate: 'speed', speed0: 4.1, fade: 0.2 },
+    // dodgeB stays procedural (a guarded back-step, blade on line): the Tripo back-jump held both fists up by the face
     dodgeL: { src: 'A man facing forward quickly leaps sideways to his left', t0: 0.3, t1: 1.25, fade: 0.08 },
     dodgeR: { src: 'A man facing forward quickly leaps sideways to his right', t0: 0.3, t1: 1.25, fade: 0.08 },
     hitFront: { src: 'hit_to_body_01', t0: 0.05, t1: 1.1, fade: 0.06, mask: 'body' },
     hitHeavy: { src: 'hit_to_head', t0: 0.05, t1: 1.6, fade: 0.06, mask: 'body' },
-    knockdown: { src: 'fall', t0: 0, t1: 2.6, fade: 0.1 },
-    death: { src: 'fall', t0: 0.95, t1: 3.0, fade: 0.1 },
-    // Attacks stay procedural: side-by-side, the video-rebuilt keys (deep 弓步, 剑指 finishes) beat the text-to-motion
-    // bodies. A body-only layer is available for new material: { src, mask: 'body', t0, key, t1 } (see bakedAnim.js).
+    hitBack: { src: 'mx:reactSmallBack', t0: 0.0, t1: 1.0, fade: 0.06, mask: 'body' },
+    stagger: { src: 'mx:reactLargeFront', t0: 0.0, t1: 1.37, fade: 0.08, mask: 'body' },   // reeling back, arms thrown out
+    ...FALLS,
+    // drawing from / returning to the left hip, upper body over the gait; `sync` puts the hand on the hilt at the
+    // clip's 'drawn' / 'sheathed' event (the frame the sword changes parent)
+    draw: { src: 'mx:drawSword', t0: 0.1, t1: 1.35, sync: [[0.378, 0.62]], fade: 0.12, grip: 'hand', mask: 'upper' },
+    sheathe: { src: 'mx:sheathSword', t0: 0.2, t1: 1.62, sync: [[0.782, 1.2]], fade: 0.15, grip: 'hand', mask: 'upper' },
+    // the forward dodge: a real shoulder roll (in and out of it with the blade kept clear)
+    dodgeF: { src: 'mx:sprintRoll', t0: 0.12, t1: 1.08, fade: 0.06, grip: 'hand' },   // the cancel point lands as he comes up
+    // Attacks: Mixamo sword mocap (whole-body commitment the hand-keyed cuts lacked). [t0, t1] of the take is mapped
+    // onto the game clip with `key` (the take's hand-speed peak) landing in the middle of the first hit window.
+    attack1: { src: 'mx:ssSlash', t0: 0.35, t1: 1.15, key: 0.7, fade: 0.08, grip: 'hand', jianzhi: true },           // R→L lunge cut
+    attack2: { src: 'mx:inwardSlash', t0: 0.95, t1: 1.62, key: 1.2, fade: 0.08, grip: 'hand' },                        // L→R backhand
+    attack3: { src: 'mx:ssCrossSlash', t0: 0.3, t1: 1.45, key: 0.83, fade: 0.08, grip: 'hand', jianzhi: true },       // L→R rising
+    attack4: { src: 'mx:ssDownSlash', t0: 0.05, t1: 1.45, key: 0.6, fade: 0.08, grip: 'hand', jianzhi: true },        // overhead into a lunge
+    thrust: { src: 'mx:thrustSlash', t0: 0.35, t1: 1.25, key: 0.85, fade: 0.08, grip: 'hand', align: true },          // chest-high thrust
+    heavy: { src: 'mx:ssJumpAttack', t0: 0.25, t1: 2.0, key: 1.2, fade: 0.1, grip: 'hand', jianzhi: true },           // leaping cleave
+    special: { src: 'mx:ssPowerSlash', t0: 0.3, t1: 2.3, key: 1.36, fade: 0.1, grip: 'hand', jianzhi: true },         // spin, slam: the qi wave
   },
 };
 
@@ -327,7 +418,13 @@ export async function createCharacter({ kind = 'hero', seed = 1 } = {}) {
   const skinUrl = MODEL_SKINS[kind];
   const skinOff = typeof location !== 'undefined' && new URLSearchParams(location.search).get('skin') === '0';
   if (skinUrl && !skinOff) {
-    try { await applyModelSkin(ch, (import.meta.env?.BASE_URL ?? '/') + skinUrl, { baked: typeof location !== 'undefined' && new URLSearchParams(location.search).get('baked') === '0' ? null : BAKED[kind], extraAnims: (EXTRA_ANIMS[kind] ?? []).map((u) => (import.meta.env?.BASE_URL ?? '/') + u) }); }
+    const base = import.meta.env?.BASE_URL ?? '/';
+    const baked = typeof location !== 'undefined' && new URLSearchParams(location.search).get('baked') === '0' ? null : BAKED[kind];
+    // the Mixamo takes this kind's table asks for ('mx:<key>'), retargeted onto its model at load
+    // (&mxall=1, dev: every take in the pack, for auditioning with ch.skin.baked.add)
+    const mxAll = typeof location !== 'undefined' && new URLSearchParams(location.search).has('mxall');
+    const mxKeys = mxAll ? ['*'] : baked ? [...new Set(Object.values(baked).map((e) => e.src).filter((s) => s.startsWith('mx:')).map((s) => s.slice(3)))] : [];
+    try { await applyModelSkin(ch, base + skinUrl, { baked, extraAnims: (EXTRA_ANIMS[kind] ?? []).map((u) => base + u), mixamo: mxKeys.length ? { url: base + MIXAMO_PACK, keys: mxKeys } : null }); }
     catch (e) { console.warn('[character] model skin failed, keeping the procedural body', e); }
   }
   return ch;

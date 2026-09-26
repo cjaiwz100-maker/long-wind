@@ -54,6 +54,12 @@ export class Director {
     this.game.player.setDrawn(false);
   }
 
+  /** Free roam (?state=explore, for filming the land): playing, but no waves ever start. */
+  explore() {
+    this.setGameState('playing');
+    this.state = 'explore'; this.t = 0;
+  }
+
   /** Leave the title: short beat, then wave 1. */
   begin(startWave = 0) {
     this.setGameState('playing');

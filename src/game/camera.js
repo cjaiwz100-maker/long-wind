@@ -164,13 +164,30 @@ export class CombatCamera {
     cam.updateMatrixWorld();
   }
 
-  /** Record mode (C): a slow, low orbit around the hero that overrides the desired shot; the blend eases it in/out. */
-  toggleOrbit() {
-    this.orbit = !this.orbit;
-    if (this.orbit) this.orbitYaw = this.heading + Math.PI;   // start from where the follow camera stands
+  /**
+   * Record mode: 'orbit' (O) a slow, low orbit around the hero; 'crane' (V) rises and pulls back into a wide vista
+   * while circling (?crane=r,h sets the end radius / height, default 24,10). Overrides the desired shot; the blend
+   * eases it in and out.
+   */
+  toggleOrbit(style = 'orbit') {
+    this.orbit = this.orbit === style ? null : style;
+    if (this.orbit) { this.orbitYaw = this.heading + Math.PI; this.orbitT = 0; }   // start from where the follow camera stands
     this._rebase = true;
   }
   _orbit(dt, pp) {
+    this.orbitT += dt;
+    if (this.orbit === 'crane') {
+      const [R, Hc] = (this.app.params?.get('crane') ?? '24,10').split(',').map(Number);
+      const u = Math.min(this.orbitT / 9, 1), e = u * u * (3 - 2 * u);
+      this.orbitYaw += dt * 0.09;
+      const r = lerp(4.5, R, e), h = lerp(1.1, Hc, e);
+      this.desPos.set(pp.x + Math.sin(this.orbitYaw) * r, pp.y + h, pp.z + Math.cos(this.orbitYaw) * r);
+      // the aim slides from the hero out to the horizon beyond him: the land opens up as the camera rises
+      _q.set(pp.x - this.desPos.x, 0, pp.z - this.desPos.z).normalize();
+      _p.set(pp.x + _q.x * 40, pp.y + 1.5, pp.z + _q.z * 40);
+      this.desAim.set(pp.x, pp.y + 1.2, pp.z).lerp(_p, e * 0.85);
+      return;
+    }
     this.orbitYaw += dt * 0.16;
     const r = 5.2 + Math.sin(this.clock * 0.21) * 1.2, h = 0.9 + Math.sin(this.clock * 0.13) * 0.45;
     this.desPos.set(pp.x + Math.sin(this.orbitYaw) * r, pp.y + h, pp.z + Math.cos(this.orbitYaw) * r);

@@ -27,7 +27,7 @@ Goal: **extreme realism + extreme aesthetic polish**, matching or beating the re
 | S | sky, lighting, shadows, atmosphere | `src/core/chunks.js`, `src/core/prelude*.js`, `src/core/atmosphere.js` (internals; keep API), `src/world/environment.js`, `src/world/sky*.js`, `src/world/shadows*.js`, `src/scenes/sky.js` |
 | W | world | `src/world/terrain*.js`, `src/world/ground*.js`, `src/world/texbake*.js`, `src/world/layout.js`, `src/world/mountains*.js`, `src/world/rocks*.js`, `src/world/props*.js`, `src/scenes/terrain.js` |
 | V | vegetation | `src/world/grass*.js`, `src/world/flora*.js`, `src/world/plumes*.js`, `src/world/flowers*.js`, `src/world/trees*.js`, `src/world/foliage*.js`, `src/world/interaction.js`, `src/scenes/grass.js` |
-| C | character | `src/character/humanoid*.js`, `outfits*.js`, `cloth*.js`, `sword*.js`, `charmat*.js`, `src/character/character.js`, `src/scenes/character.js` |
+| C | character | `src/character/humanoid*.js`, `outfits*.js`, `cloth*.js`, `sword*.js`, `charmat*.js`, `modelSkin.js`, `bakedAnim.js`, `mixamoAnims.js`, `src/character/character.js`, `src/scenes/character.js`, `tools/mixamo/` |
 | A | animation | `src/character/animator.js`, `src/character/clips/**`, `src/character/ik*.js`, `src/scenes/anim.js` |
 | P | gameplay | `src/game/**` (input, camera, player, enemy, ai, combat, director, game.js), `src/scenes/combat.js` |
 | U | UI + audio | `src/ui/**`, `src/audio/**`, `src/scenes/ui.js` |
@@ -135,6 +135,11 @@ ch.hurtCapsules(out = []) // world-space [{a: Vector3, b: Vector3, r, part: 'hea
 ch.flash(color?, strength?) // brief hit tint
 ch.setVisible(bool); ch.dispose()
 ```
+Model skins + mocap layers: `modelSkin.js` dresses the rig in a rigged GLB and plays baked clips over it
+(`bakedAnim.js`, tables `BAKED` in `character.js`). Sources: the skin's own Tripo clips, or Mixamo takes (`src: 'mx:<key>'`)
+from `assets/anims/mixamo.glb`, retargeted per skin at load by `mixamoAnims.js`. The pack is built by
+`tools/mixamo` (download → `ingest.mjs` → `clips.json` → `convert.mjs`, which ships only the keys the tables use).
+A travelling mocap action supplies the animator's root motion (`anim.rootSource`), so its footwork stays planted.
 
 ## Animation (A)
 
