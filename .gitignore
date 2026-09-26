@@ -13,3 +13,6 @@ docs/ref-notes/
 recordings/
 # raw Mixamo downloads (FBX); the game ships only the packed, used subset (public/assets/anims/mixamo.glb)
 tools/mixamo/src/
+
+# agent worktrees (local tooling)
+.claude/worktrees/

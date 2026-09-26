@@ -265,8 +265,9 @@ const execute = {
   keys: [
     K(0, S, {}),
     // chamber: the blade draws back level at the ribs, 剑指 reaches to seize the shoulder
+    // (the edge tipped 20° up from level: an easier wrist in the chamber)
     K(0.2, S, { hip: [0.03, -0.14, 0.1], pel: [8, 30, 0], sp: [4, -2, 0], ch: [2, -8, 0], nk: [-4, -12, 0], hd: [-6, -10, 0],
-      sw: sw([-0.24, 1.18, 0.0], az(3, 2), az(90)), lh: lhC(L_REACH), lk: [1, 1] }, 'flat'),
+      sw: sw([-0.24, 1.18, 0.0], az(3, 2), [0.94, 0.34, 0]), lh: lhC(L_REACH), lk: [1, 1] }, 'flat'),
     // run through: arm and blade one line at chest height
     K(0.5, S, { hip: [0.02, -0.2, 0.46], pel: [12, 50, 0], sp: [6, 0, 0], ch: [4, -8, 0], nk: [-6, -24, 0], hd: [-8, -22, 0],
       sw: sw([-0.08, 1.22, 0.62], az(1, 1), az(90)), lh: hand([0.28, 1.36, 0.72], nrm([0.1, 0, 1]), nrm([0, -1, 0])),
@@ -274,9 +275,9 @@ const execute = {
     K(0.9, S, { hip: [0.02, -0.21, 0.48], pel: [12, 50, 0], sp: [6, 0, 0], ch: [4, -8, 0], nk: [-6, -24, 0], hd: [-8, -22, 0],
       sw: sw([-0.08, 1.2, 0.6], az(1, 0), az(90)), lh: hand([0.28, 1.34, 0.72], nrm([0.1, 0, 1]), nrm([0, -1, 0])),
       rf: [-0.12, 0, 0.8, 4, 0, 0], lk: [1, 1] }, 'flat'),
-    // pull free and flick the blood off to the low right
+    // pull free and flick the blood off to the low right (out to the side: a flick behind him turned the wrist over)
     K(1.1, S, { hip: [0.02, -0.14, 0.4], pel: [8, 16, 0], sp: [4, -6, 0], ch: [2, -10, 0],
-      sw: sw([-0.4, 0.9, 0.3], az(-120, -40)), lh: lhC(L_OPEN_BACK), rf: [-0.12, 0, 0.7, 4, 0, 0], lk: [1, 1] }),
+      sw: sw([-0.44, 0.9, 0.34], az(-72, -36)), lh: lhC(L_OPEN_BACK), rf: [-0.12, 0, 0.7, 4, 0, 0], lk: [1, 1] }),
     K(1.5, S, { hip: [0.02, -0.095, 0.4], rf: [-0.14, 0, 0.7, 2, 0, 0], lf: [0.18, 0, 0.2, 32, 0, 0], lk: [1, 1] }, 'flat'),
   ],
   events: [{ t: 0.46, type: 'whoosh', speed: 0.8 }, { t: 0.5, type: 'stab' }, { t: 1.1, type: 'whoosh', speed: 1.1 }],
@@ -341,13 +342,15 @@ const assassinBlink = {
       sw: sw([-0.24, 0.9, -0.1], az(-170, -5)), lh: hand([0.24, 0.9, 0.4], nrm([0, 0.2, 1]), nrm([-1, 0, 0])),
       lf: [0.2, 0, 0.25, 20, 0, 0], rf: [-0.2, 0, -0.3, -30, 0, 0], lk: [1, 1] }, 'flat'),
     // coiled behind him (held so the hero can read it), then the thrust
+    // (the fist comes up level with the hip, not behind it, and the thrust is 平刺 — edges left and right, flat level — all
+    // the way out: behind the hip, and with the edge left to chance, the wrist bent back and wrung through the lunge)
     K(1.1, B, { hip: [0.0, -0.3, -0.14], pel: [20, 24, 0], sp: [10, 12, 0], ch: [8, 14, 0], nk: [-6, -20, 0], hd: [-8, -18, 0],
-      sw: sw([-0.3, 1.1, -0.28], az(-5, 4)), lh: hand([0.3, 1.25, 0.5], nrm([0, 0.3, 1]), nrm([-1, 0, 0])),
+      sw: sw([-0.3, 1.02, -0.05], az(-5, -4), [1, 0, 0]), lh: hand([0.3, 1.25, 0.5], nrm([0, 0.3, 1]), nrm([-1, 0, 0])),
       lf: [0.2, 0, 0.3, 20, 0, 0], rf: [-0.2, 0, -0.35, -30, 0, 0], lk: [1, 1] }, 'flat'),
     K(1.24, B, { hip: [0.0, -0.26, 0.7], pel: [16, -8, 0], sp: [8, -4, 0], ch: [6, -6, 0], nk: [-6, 6, 0], hd: [-8, 6, 0],
-      sw: sw([-0.06, 1.2, 0.9], az(0, 2)), lh: lhC(L_OPEN_BACK),
+      sw: sw([-0.06, 1.2, 0.9], az(0, 2), [1, 0, 0]), lh: lhC(L_OPEN_BACK),
       lf: [0.2, 0.05, 0.9, 20, 0, 0], rf: [-0.2, 0, -0.3, -30, 0, 0], lk: [0, 1] }),
-    K(1.4, B, { hip: [0.0, -0.25, 0.8], pel: [14, -8, 0], sp: [8, -4, 0], ch: [6, -6, 0], sw: sw([-0.08, 1.18, 0.95], az(2, 0)), lh: lhC(L_OPEN_BACK),
+    K(1.4, B, { hip: [0.0, -0.25, 0.8], pel: [14, -8, 0], sp: [8, -4, 0], ch: [6, -6, 0], sw: sw([-0.08, 1.18, 0.95], az(2, 0), [1, 0, 0]), lh: lhC(L_OPEN_BACK),
       lf: [0.2, 0, 0.95, 20, 0, 0], rf: [-0.2, 0, -0.2, -30, 0, 0], lk: [1, 1] }, 'flat'),
     K(1.75, B, { hip: [0.0, -0.1, 0.85], lf: [0.16, 0, 1.0, 18, 0, 0], rf: [-0.18, 0, 0.2, -32, 0, 0], lk: [1, 1] }, 'flat'),
   ],

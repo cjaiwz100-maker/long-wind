@@ -322,7 +322,8 @@ export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixa
       p.bone.updateWorldMatrix(false, false);
     }
   }
-  for (const A of ARMS) A.wrist = A.S === 'Right' ? swordWrist : (oBone && !oOnArm ? null : freeWrist);
+  // the sword arm solves in fixArm (swordArm); every other hand eases its excess bend (a bow in it turns with it)
+  for (const A of ARMS) A.wrist = freeWrist;
   const layer = baked && animations.length
     ? createBakedLayer(scene, animations, baked, { mb, noTrack: (n, spec) => rFingers.has(n) || (spec.jianzhi && lFingers.has(n)), armOut: (n, mask) => (mask === 'upper' ? legSet.has(n) : (mask !== 'left' && armSet.has(n)) || ((mask === 'arms' || mask === 'left') && lArmSet.has(n))), onMasked: reseatArm }) : null;
   // the blade axis in the model hand's frame: rig blade = q_rig·GRIP_R·Z, q_rig = q_model·off⁻¹
@@ -374,7 +375,9 @@ export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixa
   //     kink; near-straight arms keep their roll, and a flipped hinge is corrected at most 90° per frame's solve);
   //   • pronation is shared — the skeleton has no twist bones, so a hand turned about the forearm's axis wrung the
   //     wrist like a towel; PRON of that turn now rides the forearm bone and only the rest stays at the wrist.
-  const PRON = 0.6, PRON_MAX = THREE.MathUtils.degToRad(110);
+  const PRON = 0.6, PRON_MAX = THREE.MathUtils.degToRad(110), WRIST_TW = THREE.MathUtils.degToRad(45);
+  /** The forearm's share of a hand turn T (rad): 60%, or more so the wrist keeps at most 45°, within the forearm's range. */
+  const pronShare = (T) => Math.sign(T) * Math.min(PRON_MAX, Math.max(PRON * Math.abs(T), Math.abs(T) - WRIST_TW));
   const _S = new THREE.Vector3(), _E = new THREE.Vector3(), _W = new THREE.Vector3(), _u = new THREE.Vector3(), _f = new THREE.Vector3();
   const _n = new THREE.Vector3(), _hc = new THREE.Vector3(), _h = new THREE.Vector3(), _t1 = new THREE.Vector3(), _t2 = new THREE.Vector3();
   const _t3 = new THREE.Vector3(), _t4 = new THREE.Vector3(), _mA = new THREE.Matrix4(), _mB = new THREE.Matrix4();
@@ -389,41 +392,68 @@ export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixa
     return out.setFromRotationMatrix(_mB);
   }
   const twistAngle = (q, axis) => { let a = 2 * Math.atan2(q.x * axis.x + q.y * axis.y + q.z * axis.z, q.w); if (a > Math.PI) a -= 2 * Math.PI; if (a < -Math.PI) a += 2 * Math.PI; return a; };
-  function fixArm(A) {
-    A.arm.getWorldPosition(_S); A.fore.getWorldPosition(_E); A.hand.getWorldPosition(_W);
-    A.arm.getWorldQuaternion(_Qa); A.hand.getWorldQuaternion(_Qh);
-    _u.subVectors(_E, _S).normalize(); _f.subVectors(_W, _E).normalize();
+  // hinge for an arm (shoulder _S, elbow e, wrist _W): the plane's normal, blended toward `fallback` (the roll the upper
+  // arm already had) as the arm straightens (5°…15°: a near-straight arm has no plane to speak of); a flipped hinge is
+  // corrected at most 90° per solve. Leaves _u / _f for that elbow.
+  function hingeFor(e, fallback, out) {
+    _u.subVectors(e, _S).normalize(); _f.subVectors(_W, e).normalize();
     const bend = Math.acos(THREE.MathUtils.clamp(_u.dot(_f), -1, 1));
-    // the hinge the upper arm's roll gives now, and the one the arm's plane asks for
-    _hc.copy(A.hU).applyQuaternion(_Qa); _hc.addScaledVector(_u, -_u.dot(_hc)).normalize();
-    _h.copy(_hc);
-    const w = THREE.MathUtils.smoothstep(bend, 0.14, 0.44);   // 8°…25°: a near-straight arm has no plane to speak of
+    out.copy(fallback).addScaledVector(_u, -_u.dot(fallback)).normalize();
+    const w = THREE.MathUtils.smoothstep(bend, 0.087, 0.26);
     _n.crossVectors(_u, _f);
     if (w > 0 && _n.lengthSq() > 1e-8) {
       _n.normalize();
-      let roll = Math.atan2(_u.dot(_t1.crossVectors(_hc, _n)), _hc.dot(_n));
+      let roll = Math.atan2(_u.dot(_t1.crossVectors(out, _n)), out.dot(_n));
       roll = THREE.MathUtils.clamp(roll, -Math.PI / 2, Math.PI / 2) * w;
-      _h.applyAxisAngle(_u, roll);
+      out.applyAxisAngle(_u, roll);
     }
+    return out;
+  }
+  const FOLD_MAX = THREE.MathUtils.degToRad(148), COS_IN = Math.cos(Math.PI - FOLD_MAX);
+  const _dir = new THREE.Vector3(), _perp = new THREE.Vector3();
+  function fixArm(A) {
+    A.arm.getWorldPosition(_S); A.fore.getWorldPosition(_E); A.hand.getWorldPosition(_W);
+    A.arm.getWorldQuaternion(_Qa); A.hand.getWorldQuaternion(_Qh);
+    // an elbow folded past ~148° (the hand pressed into the shoulder): the hand eases out along the shoulder→hand line
+    // until the forearm clears the upper arm, the elbow re-solved in the same plane (the sword rides the hand)
+    let folded = false;
+    {
+      const a = _E.distanceTo(_S), bl = _W.distanceTo(_E), d = _W.distanceTo(_S);
+      const dmin = Math.sqrt(a * a + bl * bl - 2 * a * bl * COS_IN);
+      if (d < dmin && d > 1e-4) {
+        _dir.subVectors(_W, _S).divideScalar(d);
+        _W.copy(_S).addScaledVector(_dir, dmin);
+        _perp.subVectors(_E, _S); _perp.addScaledVector(_dir, -_perp.dot(_dir));
+        if (_perp.lengthSq() > 1e-10) {
+          _perp.normalize();
+          const cosA = THREE.MathUtils.clamp((a * a + dmin * dmin - bl * bl) / (2 * a * dmin), -1, 1);
+          _E.copy(_S).addScaledVector(_dir, a * cosA).addScaledVector(_perp, a * Math.sqrt(1 - cosA * cosA));
+          folded = true;
+        }
+      }
+    }
+    _hc.copy(A.hU).applyQuaternion(_Qa);                     // the hinge the upper arm's roll gives now
+    const sword = A.S === 'Right' && ch.sword?.drawn && bladeInHand && A.axK;
+    let changed = false;
+    if (sword) changed = swordArm(A);                        // may swivel _E (and _hc) and turn _Qh
+    else A.psi = A.phi = A.del = 0;
+    hingeFor(_E, _hc, _h);
     align(A.aU, A.hU, _u, _h, _Qa2);
     // the forearm with no pronation: along the forearm, hinge shared with the upper arm
     align(A.aF, A.hF, _f, _h, _F0);
     _Nn.copy(_F0).multiply(A.hRest);   // the neutral hand on that forearm (world)
-    // the wrist: keep it inside its range (sword hand: by turning the fist about the blade and letting the hilt rock
-    // in the grip; a free hand: by easing the excess bend)
-    let changed = false;
-    if (A.axK && A.wrist) changed = A.wrist(A);
+    if (!sword && A.axK && A.wrist) changed = A.wrist(A) || changed;   // a free hand eases its excess bend
     // the hand's turn about the forearm's axis, measured from the neutral hand on that forearm
     _N.copy(_Nn).invert().multiply(_Qh);
-    const P = THREE.MathUtils.clamp(twistAngle(_N, A.aFinH) * PRON, -PRON_MAX, PRON_MAX);
+    const P = pronShare(twistAngle(_N, A.aFinH));
     _Qf2.copy(_F0).multiply(_R.setFromAxisAngle(A.aF, P));
-    // write the locals (world: upper arm _Qa2, forearm _Qf2, hand unchanged)
+    // write the locals (world: upper arm _Qa2, forearm _Qf2, hand _Qh)
     A.arm.parent.getWorldQuaternion(_Pq);
     A.arm.quaternion.copy(_Pq.invert().multiply(_Qa2));
     A.fore.quaternion.copy(_Qa2).invert().multiply(_Qf2);
     A.hand.quaternion.copy(_Qf2).invert().multiply(_Qh);
     A.arm.updateWorldMatrix(false, true);
-    return changed;
+    return changed || folded;
   }
   // --- the wrist's anatomical range (degrees, relative to the forearm after its share of the pronation):
   //     flexion 70 / extension 60, radial 25 / ulnar 40, and what twist stays at the wrist 45
@@ -434,59 +464,114 @@ export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixa
   /** How far hand orientation H (world) sits outside the wrist's range, on arm A's neutral hand _Nn. */
   function wristCost(A, H) {
     _D.copy(_Nn).invert().multiply(H);
-    const tw = twistAngle(_D, A.aFinH), P = THREE.MathUtils.clamp(tw * PRON, -PRON_MAX, PRON_MAX);
+    const tw = twistAngle(_D, A.aFinH), P = pronShare(tw);
     _Tw.setFromAxisAngle(A.aFinH, tw).invert();
     _D.multiply(_Tw);                                         // the swing (hand frame)
     if (_D.w < 0) _D.set(-_D.x, -_D.y, -_D.z, -_D.w);
     const ang = 2 * Math.acos(Math.min(1, _D.w)) * 57.2958, sn = Math.sqrt(Math.max(1e-12, 1 - _D.w * _D.w));
     _wax.set(_D.x / sn, _D.y / sn, _D.z / sn).applyAxisAngle(A.aFinH, -P);   // as seen from the rolled forearm
     const flex = ang * _wax.dot(A.axK), dev = ang * _wax.dot(A.axN), wt = Math.abs(tw - P) * 57.2958;
+    wristCost.last = { flex, dev, wt, ang };
     return ex2(flex - WL.flex) + ex2(-flex - WL.ext) + ex2(dev - WL.rad) + ex2(-dev - WL.uln) + ex2(wt - WL.tw);
   }
   const D2R = Math.PI / 180, PHI_MAX = 85, DEL_MAX = 30, STEP = 6, RATE = 10;
-  /** The sword hand: the blade's direction is kept, the fist may turn about it (φ) and the hilt rock in the grip (δ). */
-  function swordWrist(A) {
-    if (!ch.sword?.drawn || !bladeInHand) { A.phi = A.del = 0; return false; }
-    _B.copy(bladeInHand).applyQuaternion(_Qh);   // _Qh: the hand as posed (H0)
+  /**
+   * The sword arm. The blade's line is the move, so first everything that leaves it alone is tried: the elbow may
+   * swivel about the shoulder→wrist line (ψ; hand and blade stay put), the fist turn about the blade (φ) and the hilt
+   * rock in the grip (δ). The most natural wrist wins (warm-started from the last frame, a wider look only when far
+   * out, eased toward at a bounded rate). What is still out of range then gives way in the blade: outside the live part
+   * of a cut the hand eases back to a comfortable wrist, inside it by at most 20°.
+   */
+  const PSI_MAX = 70;
+  const _Es = new THREE.Vector3(), _ax2 = new THREE.Vector3(), _hs = new THREE.Vector3(), _hcs = new THREE.Vector3(), _Rp = new THREE.Quaternion();
+  const mHips = mb('Hips'), mNeck = mb('Neck'), _hp = new THREE.Vector3(), _np = new THREE.Vector3(), _ep = new THREE.Vector3();
+  /** The elbow swivelled by psi (deg) about the shoulder→wrist line → _Es, with the hinge it carries → _hcs. */
+  function swivel(psi) {
+    _ax2.subVectors(_W, _S).normalize();
+    _Rp.setFromAxisAngle(_ax2, psi * D2R);
+    _Es.subVectors(_E, _S).applyQuaternion(_Rp).add(_S);
+    _hcs.copy(_hc).applyQuaternion(_Rp);
+  }
+  function armCost(A, psi, phi, del) {
+    swivel(psi);
+    hingeFor(_Es, _hcs, _hs);
+    align(A.aF, A.hF, _f, _hs, _F0); _Nn.copy(_F0).multiply(A.hRest);
+    _Rb.setFromAxisAngle(_B, phi * D2R); _Rn.setFromAxisAngle(A.axN, del * D2R);
+    _H1.copy(_Rb).multiply(_Hc).multiply(_Rn);
+    let c = wristCost(A, _H1) + 0.01 * (phi * phi + del * del) + 0.006 * psi * psi;
+    if (psi && mHips && mNeck) {
+      // the elbow stays out of the chest: its horizontal distance from the spine line (hips → neck)
+      mHips.getWorldPosition(_hp); mNeck.getWorldPosition(_np);
+      const ax = _np.sub(_hp).normalize(), d = _ep.subVectors(_Es, _hp); d.addScaledVector(ax, -d.dot(ax));
+      const inside = 0.17 - d.length(); if (inside > 0) c += 4e4 * inside * inside;
+    }
+    return c;
+  }
+  function swordArm(A) {
+    _B.copy(bladeInHand).applyQuaternion(_Qh);   // the blade as posed
     _Hc.copy(_Qh);
-    const cand = (phi, del) => {
-      _Rb.setFromAxisAngle(_B, phi * D2R); _Rn.setFromAxisAngle(A.axN, del * D2R);
-      _H1.copy(_Rb).multiply(_Hc).multiply(_Rn);
-      return wristCost(A, _H1) + 0.01 * (phi * phi + del * del);
+    let bp = A.psi ?? 0, bf = A.phi ?? 0, bd = A.del ?? 0;
+    const base = armCost(A, 0, 0, 0);
+    let bc = armCost(A, bp, bf, bd);
+    if (base <= bc) { bc = base; bp = bf = bd = 0; }
+    const tryAt = (ps, pf, pd) => {
+      ps = THREE.MathUtils.clamp(ps, -PSI_MAX, PSI_MAX); pf = THREE.MathUtils.clamp(pf, -PHI_MAX, PHI_MAX); pd = THREE.MathUtils.clamp(pd, -DEL_MAX, DEL_MAX);
+      const c = armCost(A, ps, pf, pd); if (c < bc - 1e-6) { bc = c; bp = ps; bf = pf; bd = pd; }
     };
-    const base = cand(0, 0);
-    let bp = A.phi ?? 0, bd = A.del ?? 0, bc = cand(bp, bd);
-    const tryAt = (p, d) => { p = THREE.MathUtils.clamp(p, -PHI_MAX, PHI_MAX); d = THREE.MathUtils.clamp(d, -DEL_MAX, DEL_MAX); const c = cand(p, d); if (c < bc - 1e-6) { bc = c; bp = p; bd = d; } };
-    if (base < bc) { bc = base; bp = 0; bd = 0; }
-    for (const dp of [-STEP, 0, STEP]) for (const dd of [-STEP, 0, STEP]) if (dp || dd) tryAt((A.phi ?? 0) + dp, (A.del ?? 0) + dd);
-    if (bc > 50) for (const p of [-80, -60, -40, -20, 0, 20, 40, 60, 80]) for (const d of [-30, -15, 0, 15, 30]) tryAt(p, d);   // far out: look wider
-    // move toward the best at a bounded rate (no snapping between frames)
-    A.phi = (A.phi ?? 0) + THREE.MathUtils.clamp(bp - (A.phi ?? 0), -RATE, RATE);
-    A.del = (A.del ?? 0) + THREE.MathUtils.clamp(bd - (A.del ?? 0), -RATE, RATE);
-    let moved = false;
-    if (Math.abs(A.phi) < 0.05 && Math.abs(A.del) < 0.05) A.phi = A.del = 0;
-    else { _Rb.setFromAxisAngle(_B, A.phi * D2R); _Rn.setFromAxisAngle(A.axN, A.del * D2R); _Qh.copy(_Rb).multiply(_Hc).multiply(_Rn); moved = true; }
-    // still out of range and no cut is live (outside the hit windows, the blade's exact line is free): let the hand —
-    // and the sword with it — ease back toward a comfortable wrist, as a real swordsman's would
-    const an = ch.rig.anim, act = an?.action, m = act?.clip.meta;
+    if (bc > 2) {
+      // pattern search about the best so far, then a wide look when still far out
+      for (let it = 0; it < 2; it++) { const p0 = bp, f0 = bf, d0 = bd; for (const st of [-STEP, STEP]) { tryAt(p0 + st, f0, d0); tryAt(p0, f0 + st, d0); tryAt(p0, f0, d0 + st); } }
+      if (bc > 50) for (const ps of [-60, -30, 0, 30, 60]) for (const pf of [-60, -20, 20, 60]) for (const pd of [-20, 20]) tryAt(ps, pf, pd);
+    }
+    // bounded steps (no snapping) — longer when the pose is far out of range (a fast cut outruns the small steps)
+    const ease = (cur, to, r) => (cur ?? 0) + THREE.MathUtils.clamp(to - (cur ?? 0), -r, r);
+    const boost = base > 200 ? 3 : base > 50 ? 2 : 1;
+    A.psi = ease(A.psi, bp, 8 * boost); A.phi = ease(A.phi, bf, RATE * boost); A.del = ease(A.del, bd, RATE * boost);
+    if (Math.abs(A.psi) < 0.05) A.psi = 0;
+    if (Math.abs(A.phi) < 0.05) A.phi = 0;
+    if (Math.abs(A.del) < 0.05) A.del = 0;
+    let moved = !!(A.psi || A.phi || A.del);
+    // commit: the elbow (and the hinge it carries), the hand
+    swivel(A.psi); _E.copy(_Es); _hc.copy(_hcs);
+    _Rb.setFromAxisAngle(_B, A.phi * D2R); _Rn.setFromAxisAngle(A.axN, A.del * D2R);
+    _Qh.copy(_Rb).multiply(_Hc).multiply(_Rn);
+    // what is left gives way in the blade
+    hingeFor(_E, _hc, _hs); align(A.aF, A.hF, _f, _hs, _F0); _Nn.copy(_F0).multiply(A.hRest);
+    const an = ch.rig.anim, m = an?.action?.clip.meta;
     // (a guard or a parry holds its blade line throughout: the line is the move)
-    const live = m?.type === 'block' || m?.type === 'parry' || m?.hit?.some(([a, b]) => an.time > a - 0.12 && an.time < b + 0.04);
-    if (!live) moved = freeWrist(A) || moved; else A.ease = Math.max(0, (A.ease ?? 0) - 0.08);
+    const live = m?.type === 'block' || m?.type === 'parry' || m?.hit?.some(([a0, b0]) => an.time > a0 - 0.08 && an.time < b0 + 0.04);
+    A.live = !!live; A.c0 = wristCost(A, _Qh);
+    if (!live) moved = freeWrist(A) || moved;
+    else if (wristCost(A, _Qh) > 25) {
+      // inside a cut: the least pull toward the comfortable wrist that brings it in, never more than 20° of blade
+      A_ax = A.aFinH; comfortable(_H1);
+      const full = _Qh.angleTo(_H1), t = full > 1e-4 ? Math.min(1, (20 * D2R) / full) : 0;
+      let lo = 0, hi = t;
+      _Hc.copy(_Qh);
+      for (let i = 0; i < 5; i++) { const mid = (lo + hi) / 2; _Qh.copy(_Hc).slerp(_H1, mid); if (wristCost(A, _Qh) > 4) lo = mid; else hi = mid; }
+      _Qh.copy(_Hc).slerp(_H1, hi); A.ease = 0; moved = true; A.gave = hi * full / D2R; A.c1 = wristCost(A, _Qh);
+    } else A.ease = Math.max(0, (A.ease ?? 0) - 0.08);
     return moved;
   }
   const _H1 = new THREE.Quaternion();
   /** A free hand: ease the bend back toward the neutral hand until the wrist is inside its range. */
+  const TW_MAX = PRON_MAX + WRIST_TW - THREE.MathUtils.degToRad(8);   // (a little inside the limit: the ease lands in range)
+  /** The comfortable hand for _Qh on the neutral _Nn: no swing, its turn kept within what forearm + wrist can take. */
+  function comfortable(out) {
+    _D.copy(_Nn).invert().multiply(_Qh);
+    return out.copy(_Nn).multiply(_Tw.setFromAxisAngle(A_ax, THREE.MathUtils.clamp(twistAngle(_D, A_ax), -TW_MAX, TW_MAX)));
+  }
+  let A_ax = null;
   function freeWrist(A) {
+    A_ax = A.aFinH;
     if (wristCost(A, _Qh) < 1) { A.ease = Math.max(0, (A.ease ?? 0) - 0.08); if (!A.ease) return false; }
     else {
-      // the smallest pull toward neutral (twist kept) that brings the wrist inside
-      _D.copy(_Nn).invert().multiply(_Qh);
-      _Hc.copy(_Nn).multiply(_Tw.setFromAxisAngle(A.aFinH, twistAngle(_D, A.aFinH)));   // neutral hand, same twist
-      let t = 0; for (const k of [0.15, 0.3, 0.45, 0.6]) { t = k; _H1.copy(_Qh).slerp(_Hc, k); if (wristCost(A, _H1) < 1) break; }
+      // the smallest pull toward the comfortable hand that brings the wrist inside
+      comfortable(_Hc);
+      let t = 0; for (const k of [0.15, 0.3, 0.45, 0.6, 0.8]) { t = k; _H1.copy(_Qh).slerp(_Hc, k); if (wristCost(A, _H1) < 1) break; }
       A.ease = Math.max(t, (A.ease ?? 0) - 0.08);
     }
-    _D.copy(_Nn).invert().multiply(_Qh);
-    _Hc.copy(_Nn).multiply(_Tw.setFromAxisAngle(A.aFinH, twistAngle(_D, A.aFinH)));
+    comfortable(_Hc);
     _Qh.slerp(_Hc, A.ease);
     return true;
   }
@@ -506,12 +591,14 @@ export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixa
       const tw = twistAngle(_N, A.aFinH);
       // the wrist's swing as a rotation vector in the hand's rest frame, split over the knuckle axis (flexion) and the
       // palm normal (deviation); _N = hand relative to its neutral on this forearm
+      // (the swing alone: the wrist's leftover twist about the forearm axis taken out first)
       let flex = 0, dev = 0;
       if (A.axK) {
-        const q = _N.w < 0 ? _Pq.set(-_N.x, -_N.y, -_N.z, -_N.w) : _Pq.copy(_N);
+        const q = _Pq.copy(_N).multiply(_R.setFromAxisAngle(A.aFinH, tw).invert());
+        if (q.w < 0) q.set(-q.x, -q.y, -q.z, -q.w);
         const ang = 2 * Math.acos(Math.min(1, q.w)), sn = Math.sqrt(Math.max(1e-12, 1 - q.w * q.w));
         _t1.set(q.x / sn, q.y / sn, q.z / sn);
-        // q is in the neutral hand's frame, i.e. the hand rest frame: axes axK / axN apply directly
+        // q is in the hand's rest frame: axes axK / axN apply directly
         flex = D(ang * _t1.dot(A.axK)); dev = D(ang * _t1.dot(A.axN));
       }
       o[A.S] = { bend: D(bend) * (side < -0.05 * Math.sin(bend) ? -1 : 1), lateral: D(Math.asin(Math.min(1, Math.abs(_f.dot(_hc))))), pron: D(pron), wristTwist: D(tw), wristSwing: D(2 * Math.acos(Math.min(1, Math.abs(_N.w)))), flex, dev };
@@ -550,7 +637,13 @@ export async function applyModelSkin(ch, url, { map = MIXAMO_MAP, prefix = 'mixa
     root: scene, scale: k, flinch: 0, flinchAxis: null, flinchTwist: 0,
     /** Dev/QA: each model bone's rest local rotation (fingers curled), e.g. for joint-angle checks. */
     restOf: (b) => restLocal.find((r) => r[0] === b)?.[1],
-    armStats, armFixOff: false,
+    armStats, armFixOff: false, arms: ARMS,
+    wristCheck(S) {   // dev: the solver's own view of the final pose
+      const A = ARMS.find((x) => x.S === S);
+      A.arm.getWorldPosition(_S); A.fore.getWorldPosition(_E); A.hand.getWorldPosition(_W); A.arm.getWorldQuaternion(_Qa); A.hand.getWorldQuaternion(_Qh);
+      _hc.copy(A.hU).applyQuaternion(_Qa); hingeFor(_E, _hc, _h); align(A.aF, A.hF, _f, _h, _F0); _Nn.copy(_F0).multiply(A.hRest);
+      const c = wristCost(A, _Qh); return { c, ...wristCost.last };
+    },
     /** Copy the rig's pose onto the model (call after the animator, before rendering). */
     baked: layer,
     update(dt = 0) {

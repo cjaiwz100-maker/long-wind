@@ -352,7 +352,7 @@ const airFlurry = {
       lf: [0.17, 0.14, 0.0, 40, -40, 0], rf: [-0.12, 0.2, 0.46, 4, -30, 0], lk: [0, 0] }),
     // apex: knees tucked high, the body a drawn bow — blade cocked far behind the head, 剑指 high and forward
     K(0.32, S, { hip: [0.02, 0.5, 0.62], pel: [-8, 24, 0], sp: [-8, -8, 0], ch: [-10, -10, 0], nk: [2, -4, 0], hd: [0, -4, 0],
-      sw: sw([-0.16, 2.1, -0.08], az(-168, 30), [0, 0.8, 0.6]),
+      sw: sw([-0.16, 2.1, -0.08], az(-168, 30), [0.34, 0.79, 0.52]),   // edge rolled 20° about the blade: an easier wrist
       lh: hand([0.38, 1.98, 0.3], nrm([0.2, 0.9, 0.3]), nrm([-0.5, 0, 0.85])),
       lf: [0.17, 0.62, 0.46, 34, 20, 0], rf: [-0.12, 0.7, 0.86, 4, 24, 0], lk: [0, 0] }),
     // the cut: over the top and down the diagonal at full reach, hips twisting through, still in the air
@@ -407,8 +407,9 @@ const flipCleave = {
     FLIP(0.35, 220, 0.7, 0.9),
     FLIP(0.44, 310, 0.6, 1.15),
     // open out of the roll: upright, the blade already raised over the head, legs reaching down
+    // (the edge is turned 30° about the blade: with the old roll the wrist had to wring over to hold it)
     K(0.53, S, { hip: [0.0, 0.4, 1.34], pel: [362, 22, 0], sp: [-4, -6, 0], ch: [-6, -8, 0], nk: [0, -4, 0], hd: [-2, -4, 0],
-      sw: sw([-0.1, 0.62, 0.02], nrm([-0.2, 0.55, -0.8]), nrm([0.1, 0.8, 0.58])), lh: L_REACH,
+      sw: sw([-0.1, 0.62, 0.02], nrm([-0.2, 0.55, -0.8]), nrm([0.58, 0.71, 0.4])), lh: L_REACH,
       lf: [0.17, 0.5, 1.1, 38, 0, 0], rf: [-0.12, 0.5, 1.6, 4, 10, 0], lk: [0, 0] }),
     // the cleave falls with the body
     K(0.62, S, { hip: [0.0, 0.1, 1.46], pel: [374, 26, 0], sp: [10, -6, 0], ch: [10, -6, 0], nk: [-6, -4, 0], hd: [-8, -4, 0],
