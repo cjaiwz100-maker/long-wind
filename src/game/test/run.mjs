@@ -1,6 +1,6 @@
 // Headless gameplay tests (no browser, no GPU): segment/capsule math, the move table, the player state machine,
 // enemy AI + the attack coordinator, and combat resolution (hit, block, perfect parry, i-frames, unblockables,
-// posture breaks, kills). Owner: gameplay (P).
+// posture breaks, kills), and the touch input source. Owner: gameplay (P).
 //
 //   node src/game/test/run.mjs            → exit code 0 when every test passes
 //
@@ -14,6 +14,7 @@ import { Player, PLAYER } from '../player.js';
 import { Enemy } from '../enemy.js';
 import { Coordinator, think } from '../ai.js';
 import { Combat, FEEL } from '../combat.js';
+import { Input } from '../input.js';
 
 // ------------------------------------------------------------------------------------------------ tiny harness
 let passed = 0, failed = 0;
@@ -367,6 +368,26 @@ test('posture break staggers, and staggered enemies take bonus damage', () => {
   const hp = e.hp;
   g.combat.playerHits(P, e, V(0, 1.2, 1.4), 'torso', { damage: 10, posture: 0, kind: 'light', reach: 2, arc: 1 });
   assert(near(hp - e.hp, 15), `damage ${hp - e.hp}`);
+});
+
+// ------------------------------------------------------------------------------------------------ input
+test('touch source: held buttons give key edges, the stick moves, a drag looks (smoothed), clear releases', () => {
+  const inp = new Input(null), T = inp.touch;
+  T.hold('light', true); inp.update(DT);
+  assert(inp.b.light.pressed && inp.b.light.down, 'light press edge');
+  for (let i = 0; i < 20; i++) inp.update(DT);
+  assert(inp.b.light.held > 0.3 && !inp.b.light.pressed, `held ${inp.b.light.held}`);   // long enough for the heavy charge
+  T.hold('light', false); inp.update(DT);
+  assert(inp.b.light.released && !inp.b.light.down, 'light release edge');
+  T.setMove(0, 2); T.n = 1; inp.update(DT);
+  assert(near(inp.move.y, 1) && inp.idle < 1e-9, `move ${inp.move.y} idle ${inp.idle}`);
+  T.look(0.3, -0.1);
+  let lx = 0, ly = 0;
+  for (let i = 0; i < 60; i++) { inp.update(DT); lx += inp.look.x; ly += inp.look.y; inp.endFrame(); }
+  assert(near(lx, 0.3, 1e-4) && near(ly, -0.1, 1e-4), `look ${lx} ${ly}`);
+  T.hold('block', true); inp.update(DT);
+  inp.clear(); inp.update(DT);
+  assert(!inp.b.block.down && inp.b.block.released && inp.move.lengthSq() === 0, 'clear releases the guard and the stick');
 });
 
 // ------------------------------------------------------------------------------------------------ report

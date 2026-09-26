@@ -169,11 +169,15 @@ block, stagger; "only 1–2 attack at once"), hit detection (blade segment sweep
 
 Controls: WASD move · Mouse look · LMB light combo · hold LMB/RMB-tap heavy · RMB hold block (tap at impact = parry)
 · Space dodge · Shift sprint · Q/Tab lock-on · E sword-qi special (when focus meter full) · F draw/sheathe · Esc pause.
+Touch (phones/tablets, `ui/touch.js` → `input.touch`, merged like the pad; `?touch=1|0` forces/disables): floating
+left stick (past the rim = sprint) · right-side drag = look · 斩 light (hold = heavy) · 格 block (tap at impact = parry)
+· 闪 dodge · 气 sword-qi · 锁 lock-on · 剑 draw/sheathe · ‖ pause. No pointer lock while touch is enabled.
 
 ## UI + Audio (U)
 
 `createHUD(app) → {update(dt)}` (`ui/hud.js`) ink-brush minimal HUD, title screen, wave banners (calligraphy), pause,
-controls hint, damage numbers optional, victory/defeat. `createAudio(app) → {update(dt)}` (`audio/audio.js`) fully
+controls hint, damage numbers optional, victory/defeat. `createTouchControls(app, { game, hud })` (`ui/touch.js`) the
+on-screen touch controls in the same ink, created by the scenes after the game. `createAudio(app) → {update(dt)}` (`audio/audio.js`) fully
 synthesized WebAudio: wind ambience synced to `G.uWind`, grass rustle, footsteps, sword whoosh/clash/parry ring,
 flesh hits, guqin/xiao-like pentatonic ambient music (Karplus–Strong). Both subscribe to the bus only.
 
