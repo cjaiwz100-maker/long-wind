@@ -4,8 +4,9 @@ import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 const root = new URL('../../', import.meta.url).pathname;
 const all = JSON.parse(fs.readFileSync(root + 'tools/mixamo/clips.json', 'utf8'));
-// ship only the takes the game's tables use ('mx:<key>' in character.js); --all packs every downloaded take (auditioning)
-const used = new Set([...fs.readFileSync(root + 'src/character/character.js', 'utf8').matchAll(/'mx:(\w+)'/g)].map((m) => m[1]));
+// ship only the takes the game's tables use ('mx:<key>' in character.js and the crowd's crowdMocap.js); --all packs every
+// downloaded take (auditioning)
+const used = new Set(['character.js', 'crowdMocap.js'].flatMap((f) => [...fs.readFileSync(root + 'src/character/' + f, 'utf8').matchAll(/'mx:(\w+)'/g)].map((m) => m[1])));
 for (const k of used) if (!all[k]) console.warn('not in clips.json:', k);
 // a composite loads the takes it is built from (they ship only if the game uses them directly)
 const ship = [...used];

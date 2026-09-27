@@ -42,7 +42,7 @@ const CURL = {
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _p = new THREE.Vector3(), _v = new THREE.Vector3(), _s = new THREE.Vector3();
 const _m = new THREE.Matrix4();
 
-function loadGLB(url) {
+export function loadGLB(url) {
   if (!cache.has(url)) cache.set(url, loader.loadAsync(url));
   return cache.get(url);
 }

@@ -363,6 +363,134 @@
   "num": "104760901",
   "desc": "Smash With Back Of Rifle Or Staff"
  },
+ "rifleIdle": {
+  "num": "104220901",
+  "desc": "Rifle Idle (low ready)"
+ },
+ "rifleAimIdle": {
+  "num": "115690901",
+  "desc": "Rifle Standing Aiming Idle"
+ },
+ "rifleWalk": {
+  "num": "116160902",
+  "desc": "Walking While Aiming Rifle"
+ },
+ "rifleRun": {
+  "num": "114260901",
+  "desc": "Running With Rifle Aimed"
+ },
+ "rifleWalkBack": {
+  "num": "116150902",
+  "desc": "Walking Backwards While Aiming Rifle"
+ },
+ "rifleStrafeR": {
+  "num": "116140901",
+  "desc": "Rifle Walk Strafe Right"
+ },
+ "rifleStrafeL": {
+  "num": "116140901m",
+  "desc": "Rifle Walk Strafe Right, mirrored (left)"
+ },
+ "rifleRunBack": {
+  "num": "115830901",
+  "desc": "Running Backwards While Aiming Rifle"
+ },
+ "rifleBlock": {
+  "num": "104850901",
+  "desc": "Blocking With A Rifle"
+ },
+ "rifleHit": {
+  "num": "104250908",
+  "desc": "Hit Reaction While Holding A Rifle"
+ },
+ "rifleHitBig": {
+  "num": "113860901",
+  "desc": "Hit Reaction Holding Rifle (doubles over)"
+ },
+ "rifleHitL": {
+  "num": "104250904",
+  "desc": "Left Reaction To Front Hit Holding A Rifle"
+ },
+ "axeBlockReact": {
+  "num": "128650904",
+  "desc": "Large Block Reaction With Axe"
+ },
+ "throwR": {
+  "num": "120560901",
+  "desc": "Throwing An Object From A Standard Pose"
+ },
+ "throwL": {
+  "num": "120560901m",
+  "desc": "Throwing An Object, mirrored (left hand)"
+ },
+ "bowHitHead": {
+  "num": "127690922",
+  "desc": "Hit Reaction From Headshot With Bow"
+ },
+ "bowHitBack": {
+  "num": "127690963",
+  "desc": "Hit Reaction From Behind With Bow"
+ },
+ "bowHitLarge": {
+  "num": "127690964",
+  "desc": "Large Hit Reaction From The Front With Bow"
+ },
+ "cWalk": {
+  "num": "128650947",
+  "desc": "Unarmed Walk Forward"
+ },
+ "cWalkF": {
+  "num": "124540901",
+  "desc": "Female Walk"
+ },
+ "cWalkOld": {
+  "num": "104350901",
+  "desc": "Slow Old Man Shuffle Walk"
+ },
+ "cRun": {
+  "num": "128650943",
+  "desc": "Unarmed Run Forward"
+ },
+ "cRunIntent": {
+  "num": "118090901",
+  "desc": "Running With Intention"
+ },
+ "cIdle": {
+  "num": "117780901",
+  "desc": "Standing Idle"
+ },
+ "cIdleF": {
+  "num": "113410901",
+  "desc": "Weight Shift Idle"
+ },
+ "cIdleOld": {
+  "num": "104340901",
+  "desc": "Old Man Standing Idle"
+ },
+ "cLook": {
+  "num": "107820901",
+  "desc": "Idle Stand Looking Around"
+ },
+ "cTalk": {
+  "num": "109800901",
+  "desc": "Asking A Question With Two Hands"
+ },
+ "cTalkF": {
+  "num": "110090902",
+  "desc": "General Conversation"
+ },
+ "cTalkFunny": {
+  "num": "108420901",
+  "desc": "Talking Finding Something Funny"
+ },
+ "cTerrified": {
+  "num": "118010901",
+  "desc": "Being Terrified While Standing"
+ },
+ "cHide": {
+  "num": "130470901",
+  "desc": "Crouched Hiding To Ducking"
+ },
  "bowShotFull": {
   "compose": [
    [

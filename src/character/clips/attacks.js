@@ -388,7 +388,7 @@ const flipFeet = (th, hipY, z, side) => {
 };
 const FLIP = (t, th, hipY, z, extra = {}) => K(t, S, {
   hip: [0.0, hipY, z], pel: [th, 20, 0], sp: [26, -6, 0], ch: [22, -6, 0], nk: [18, -4, 0], hd: [10, -4, 0],
-  sw: sw([-0.14, -0.1, 0.34], nrm([0.1, -0.35, -0.93]), nrm([0, 0.93, -0.35])), lh: L_TUCK,
+  sw: sw([-0.2, -0.1, 0.34], nrm([-0.36, -0.3, -0.88]), nrm([0, 0.95, -0.32])), lh: L_TUCK,   // the blade laid back past the right hip, clear of the body
   lf: flipFeet(th, hipY, z, 'L'), rf: flipFeet(th, hipY, z, 'R'), lk: [0, 0], ...extra });
 const flipCleave = {
   meta: { duration: 1.2, type: 'light', hit: [[0.62, 0.72]], combo: null, cancel: 0.9, damage: 34, posture: 30, reach: 2.4, lunge: 1.6,

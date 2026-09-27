@@ -16,6 +16,8 @@ const UP = new THREE.Vector3(0, 1, 0);
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _n = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _qt = new THREE.Quaternion();
 const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+/** Airborne weight from the lower foot's height over the ground (contract metres): the feet hang pointed above ~25 cm. */
+export const airWeight = (h) => sstep(0.1, 0.28, h);
 
 class FootState {
   constructor() {
@@ -77,6 +79,7 @@ export class FootPlanter {
     // which foot has the larger drift gets to step first
     let stepping = this.feet[0].mode === 'step' || this.feet[1].mode === 'step';
     const err = [0, 0];
+    let lowest = Infinity;   // the lower foot's height over the ground (m, hop included): both off it → airborne
 
     for (let i = 0; i < 2; i++) {
       const f = this.feet[i];
@@ -146,6 +149,7 @@ export class FootPlanter {
 
       // ---- terrain tilt (only near the ground) ----
       const hAbove = O.y - (this.ground(O.x, O.z) + this.hop);
+      lowest = Math.min(lowest, (hAbove + this.hop) / s + (w > 0.5 ? -1 : 0));
       const tiltW = 1 - sstep(0.02 * s, 0.14 * s, hAbove);
       _qt.copy(OQ);
       if (this.normalAt && tiltW > 0) {
@@ -162,6 +166,7 @@ export class FootPlanter {
       _q2.copy(this.rootQInv).multiply(_qt);
       footFromAnchor(A, _q2, pose.pitch[i], s, this.ankles[i], this.footQ[i]);
     }
+    this.solver.air = airWeight(lowest);
     return this;
   }
 }

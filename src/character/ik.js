@@ -261,6 +261,10 @@ export class RigSolver {
       q1: new THREE.Quaternion(), q2: new THREE.Quaternion(), q3: new THREE.Quaternion(), q4: new THREE.Quaternion(), q5: new THREE.Quaternion() };
     this.debug = { elbow: [new THREE.Vector3(), new THREE.Vector3()], knee: [new THREE.Vector3(), new THREE.Vector3()], wrist: [new THREE.Vector3(), new THREE.Vector3()], ankle: [new THREE.Vector3(), new THREE.Vector3()] };
     this.wristLimit = 72 * D2R;
+    // airborne weight 0..1 (both feet well off the ground; set by the foot planter): a foot in the air hangs pointed
+    // from the shin instead of held flat, as if on an invisible floor
+    this.air = 0;
+    this.airAnkle = 58 * D2R;   // shin → toe angle it relaxes to (90° = a flat foot under a vertical shin: 32° pointed)
     this.twistSplit = 0.65; // forearm share of the wrist twist (rest on the hand)
   }
 
@@ -459,6 +463,17 @@ export class RigSolver {
     const qS = T.q3; quatFromFrames(leg.axis2, leg.nRest, d2, n, qS);
     B[`upperLeg.${side}`].quaternion.copy(Q.hips).invert().multiply(qT);
     B[`lowerLeg.${side}`].quaternion.copy(qT).invert().multiply(qS);
+    if (this.air > 0.001) {
+      // in the air: toes point down the line of the shin (only ever toward it: an already pointed foot keeps its angle)
+      const f = T.d.set(0, 0, 1).applyQuaternion(footQ);
+      const ang = Math.acos(Math.max(-1, Math.min(1, f.dot(d2))));
+      if (ang > this.airAnkle) {
+        const ax = T.e.crossVectors(f, d2);
+        if (ax.lengthSq() > 1e-8) {
+          footQ = T.q1.setFromAxisAngle(ax.normalize(), (ang - this.airAnkle) * this.air).multiply(footQ);
+        }
+      }
+    }
     B[`foot.${side}`].quaternion.copy(qS).invert().multiply(footQ);
     if (B[`toes.${side}`]) B[`toes.${side}`].quaternion.copy(pose.q[`toes.${side}`]);
   }

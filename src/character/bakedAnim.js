@@ -23,8 +23,9 @@ const _q = new THREE.Quaternion();
  *   grip 'hand' skips the empty-hand grip solve for takes shot with a sword in the hand, e.g. Mixamo 'mx:' clips, and
  *   grip 'pole' lays a two-handed shaft from the right fist through the left (spear over a rifle or staff take);
  *   jianzhi: the free hand's fingers keep the 剑指 curl, e.g. over a take whose off hand gripped a shield)
+ * alias(name) → table key: lets a caller pick among variants of one game clip (a crowd's idle by what each person does)
  */
-export function createBakedLayer(root, animations, table, { mb, noTrack = () => false, armOut = () => false, onMasked = null }) {
+export function createBakedLayer(root, animations, table, { mb, noTrack = () => false, armOut = () => false, onMasked = null, alias = null }) {
   const byName = {}; root.traverse((o) => { byName[o.name] = o; });
   const hips = mb('Hips');
   const entries = {};
@@ -121,7 +122,8 @@ export function createBakedLayer(root, animations, table, { mb, noTrack = () => 
   }
 
   function pick(anim) {
-    const name = anim.action ? anim.action.clip.name : anim.current;
+    let name = anim.action ? anim.action.clip.name : anim.current;
+    if (alias) name = alias(name);   // e.g. a townsman's 'idle' → 'idle:chat' while he talks
     // '<clip>~free': the sheathed variant (both arms swing as authored; the sword arm is only the animator's while armed)
     if (!anim.action && !anim.armed && entries[name + '~free']) return entries[name + '~free'];
     return entries[name] ?? null;

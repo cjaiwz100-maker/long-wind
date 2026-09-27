@@ -14,6 +14,8 @@
 //
 // Bodies: the procedural character pipeline (createCharacter) with the citizen_* kinds (outfitsRecipes.js); a fixed
 // set of LOOKS (kind, seed) is built once each and instanced across the crowd (the geometry cache is per kind:seed).
+// Motion: Mixamo takes over the procedural gait (character/crowdMocap.js): walks and the flight at the gait speed,
+// idles by what each citizen is doing (talking, at a stall, waiting), the cower; ?crowdmocap=0 = procedural only.
 // Cost control: every citizen's animator + bones run on a tick whose rate falls with camera distance (every frame
 // < 10 m, every 2nd < 22 m, every 3rd < 36 m, every 4th beyond, hidden > 46 m, off-screen at most every 4th; standing still: half that rate); the cloth sim runs only for the nearest few and while
 // a crouching citizen's robe settles, otherwise the cloth is rigid (rest pose on the hips) or frozen in place.
@@ -22,6 +24,7 @@ import { bus } from '../core/bus.js';
 import { LAYOUT } from './layout.js';
 import { createCharacter, prefetchCharacters } from '../character/character.js';
 import { Animator } from '../character/animator.js';
+import { crowdLayer } from '../character/crowdMocap.js';
 import { windVector } from '../core/wind.js';
 import { mulberry32 } from '../core/noise.js';
 
@@ -56,6 +59,7 @@ const CLOTH_N = 2, CLOTH_R = 14;           // cloth sim for the nearest few insi
 const SETTLE = 1.8;                         // s of cloth sim after a citizen stops (a crouch lets the robe fall)
 const NO_CLOTH = typeof location !== 'undefined' && new URLSearchParams(location.search).get('cloth') === '0';   // debug: rigid cloth
 const CLOTH_ALL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('cloth') === 'all';
+const NO_MOCAP = typeof location !== 'undefined' && new URLSearchParams(location.search).get('crowdmocap') === '0';   // debug: procedural gait
 
 export async function createCitizens(app, opts = {}) {
   const T = opts.town ?? LAYOUT.town;
@@ -261,6 +265,8 @@ export async function createCitizens(app, opts = {}) {
     gateSkeleton(c);
     c.anim = new Animator(ch.rig, { heightAt, normalAt, style: c.kind === 'citizen_m' ? 'bandit' : 'hero', kind: c.kind });
     c.anim.setArmed(false);
+    // Mixamo mocap over the procedural gait (walks, the flight, idles by what they are doing, the cower)
+    if (!NO_MOCAP) crowdLayer(ch, c.kind, { variant: c.phase, alias: (n) => mocapName(c, n) }).then((L) => { if (!disposed) c.baked = L; });
     ch.sword.setDrawn(false);
     ch.group.visible = false;
     ch.group.position.copy(c.pos);
@@ -271,6 +277,13 @@ export async function createCitizens(app, opts = {}) {
     if (c.state === 'cower') c.anim.play('cower', { fade: 0 });
     c.pending = true;
     readyN++;
+  }
+  /** The crowd take for the animator's clip: standing splits by what the citizen is doing; the cower, once down, trembles. */
+  function mocapName(c, n) {
+    if (n === 'idle') return c.state === 'chat' ? 'idle:chat' : c.state === 'browse' ? 'idle:browse' : n;
+    if (n === 'cower') return c.anim.time < 0.74 ? n : 'cower:hold';
+    if (n === 'cowerUp') return 'cower:hold';
+    return n;
   }
   function reveal(c) {
     c.pending = false; c.fresh = true; c.acc = 1 / 60; c.skDirty = true;
@@ -613,6 +626,7 @@ export async function createCitizens(app, opts = {}) {
     anim.feet.normalAt = c.dist < TIER[0] ? normalAt : null;
     const q0 = performance.now();
     anim.update(h, g);
+    c.baked?.update(h, anim);
     g.updateMatrixWorld(true);
     const q1 = performance.now();
     prof.anim += q1 - q0;

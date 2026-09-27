@@ -27,7 +27,7 @@ Goal: **extreme realism + extreme aesthetic polish**, matching or beating the re
 | S | sky, lighting, shadows, atmosphere | `src/core/chunks.js`, `src/core/prelude*.js`, `src/core/atmosphere.js` (internals; keep API), `src/world/environment.js`, `src/world/sky*.js`, `src/world/shadows*.js`, `src/scenes/sky.js` |
 | W | world | `src/world/terrain*.js`, `src/world/ground*.js`, `src/world/texbake*.js`, `src/world/layout.js`, `src/world/mountains*.js`, `src/world/rocks*.js`, `src/world/props*.js`, `src/scenes/terrain.js` |
 | V | vegetation | `src/world/grass*.js`, `src/world/flora*.js`, `src/world/plumes*.js`, `src/world/flowers*.js`, `src/world/trees*.js`, `src/world/foliage*.js`, `src/world/interaction.js`, `src/scenes/grass.js` |
-| C | character | `src/character/humanoid*.js`, `outfits*.js`, `cloth*.js`, `sword*.js`, `charmat*.js`, `modelSkin.js`, `bakedAnim.js`, `mixamoAnims.js`, `src/character/character.js`, `src/scenes/character.js`, `tools/mixamo/` |
+| C | character | `src/character/humanoid*.js`, `outfits*.js`, `cloth*.js`, `sword*.js`, `charmat*.js`, `modelSkin.js`, `bakedAnim.js`, `mixamoAnims.js`, `crowdMocap.js`, `src/character/character.js`, `src/scenes/character.js`, `tools/mixamo/` |
 | A | animation | `src/character/animator.js`, `src/character/clips/**`, `src/character/ik*.js`, `src/scenes/anim.js` |
 | P | gameplay | `src/game/**` (input, camera, player, enemy, ai, combat, director, game.js), `src/scenes/combat.js` |
 | U | UI + audio | `src/ui/**`, `src/audio/**`, `src/scenes/ui.js` |
@@ -140,6 +140,11 @@ Model skins + mocap layers: `modelSkin.js` dresses the rig in a rigged GLB and p
 from `assets/anims/mixamo.glb`, retargeted per skin at load by `mixamoAnims.js`. The pack is built by
 `tools/mixamo` (download → `ingest.mjs` → `clips.json` → `convert.mjs`, which ships only the keys the tables use).
 A travelling mocap action supplies the animator's root motion (`anim.rootSource`), so its footwork stays planted.
+Every enemy kind plays mocap for its gaits, attacks, guards and reactions (the shared `REACT` set where a weapon pack
+has none); what stays procedural is gameplay-specific (the spear sweep, the assassin's blink, the tucked somersault).
+The townsfolk (procedural bodies, no model skin) get the same layer on the contract rig: `crowdMocap.js` retargets
+their takes onto a rest rig per body size and `world/citizens.js` updates it after each citizen's animator.
+Airborne feet (both off the ground by ~25 cm, the planter's `solver.air`) hang pointed from the shin in the leg solve.
 
 ## Animation (A)
 

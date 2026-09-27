@@ -307,6 +307,13 @@ export default async function (app) {
     scene.add(ch.group);
     const anim = new Animator(ch.rig, { heightAt, normalAt, style, kind });
     hooks.anim = anim; hooks.ch = ch;
+    // townsfolk: the crowd's Mixamo layer over the gait, as in world/citizens.js (hooks.cstate = 'chat' | 'browse'
+    // picks the standing variant; &crowdmocap=0 shows the procedural gait alone)
+    if (useChar && kind.startsWith('citizen') && P.get('crowdmocap') !== '0') {
+      const { crowdLayer } = await import('../character/crowdMocap.js');
+      hooks.crowd = await crowdLayer(ch, kind, { variant: +(P.get('variant') || 0), alias: (n) => n === 'idle' && hooks.cstate ? `idle:${hooks.cstate}`
+        : n === 'cower' ? (anim.time < 0.74 ? n : 'cower:hold') : n === 'cowerUp' ? 'cower:hold' : n });
+    }
     const clip = P.get('clip'), tFix = P.has('t') ? parseFloat(P.get('t')) : null;
     const play = P.get('play');
     const loco = { speed: locoSpeed ?? 0, dirX: dX, dirZ: dZ, combat, turn: parseFloat(P.get('turn') || '0') };
@@ -390,6 +397,7 @@ export default async function (app) {
           ch.group.position.addScaledVector(vel, dt);
           ch.group.rotation.y += (loco.turn || 0) * dt;
           const out = anim.update(dt, ch.group);
+          hooks.crowd?.update(dt, anim);
           const rm = _tmp.copy(out.rootMotion).applyAxisAngle(UP, ch.group.rotation.y);
           ch.group.position.add(rm);
           ch.group.rotation.y += out.rootYaw;

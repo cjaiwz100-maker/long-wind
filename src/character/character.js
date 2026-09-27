@@ -51,13 +51,24 @@ const FALLS = {
   deathBack: { src: 'mx:fallBackDeath', t0: 0.05, t1: 2.2, fade: 0.1 },
   deathLaunch: { src: 'mx:flyingBackDeath', t0: 0.1, t1: 2.9, fade: 0.12, root: false },   // gameplay throws the body
 };
+// Reactions from the unarmed standing-react set, for kinds whose weapon pack has none: the weapon arm stays with the
+// animator (the takes' empty hands fling about), the rest of the body reels. [t0, t1] is the flinch itself: the
+// game clips are short and the recovery rides the fade back to the stance. The executed victim hangs on the blade a
+// beat (sync: the take's first sag stretched to the stab), then folds at the knees and pitches forward.
+const REACT = {
+  hitFront: { src: 'mx:reactSmallFront', t0: 0, t1: 0.8, fade: 0.06, mask: 'body' },
+  hitBack: { src: 'mx:reactSmallBack', t0: 0, t1: 0.85, fade: 0.06, mask: 'body' },
+  hitHeavy: { src: 'mx:reactLargeFront', t0: 0, t1: 1.2, fade: 0.06, mask: 'body' },
+  stagger: { src: 'mx:reactLargeFront', t0: 0, t1: 1.37, fade: 0.08, mask: 'body' },   // reeling back, arms thrown out
+  parried: { src: 'mx:reactLargeRight', t0: 0.05, t1: 1.1, fade: 0.05, mask: 'body' },   // the weapon arm knocked wide
+  executed: { src: 'mx:fallFwdDeath', t0: 0, t1: 2.5, sync: [[1.0, 0.35]], fade: 0.12 },
+};
+// every enemy: the model's own walk/run presets under the procedural weapon arm until a kind has a weapon pack's gait
 const ENEMY_BAKED = {
   walk: { src: 'walk', rate: 'speed', fade: 0.25, mask: 'body' },
   run: { src: 'run', rate: 'speed', fade: 0.2, mask: 'body' },
   sprint: { src: 'run', rate: 'speed', fade: 0.2, mask: 'body' },
-  hitFront: { src: 'hit_to_body_01', t0: 0.05, t1: 1.1, fade: 0.06, mask: 'body' },
-  hitBack: { src: 'hit_to_body_01', t0: 0.05, t1: 1.1, fade: 0.06, mask: 'body' },
-  hitHeavy: { src: 'hit_to_head', t0: 0.05, t1: 1.6, fade: 0.06, mask: 'body' },
+  ...REACT,
   ...FALLS,
 };
 /** A looping take that follows the gait speed (locomotion). */
@@ -65,6 +76,7 @@ const gait = (src, fade = 0.25, extra = {}) => ({ src, rate: 'speed', fade, grip
 // bandits (and the heavy): a one-handed-axe fighter's mocap — the dao hangs low and heavy, every swing is a haymaker
 const BANDIT_BAKED = {
   ...ENEMY_BAKED,
+  idle: { src: 'mx:axeIdle', loop: true, fade: 0.3, grip: 'hand' },
   combatIdle: { src: 'mx:axeIdle', loop: true, fade: 0.3, grip: 'hand' },
   walk: gait('mx:axeWalk'), run: gait('mx:axeRun', 0.2), sprint: gait('mx:axeRun', 0.2),
   walkBack: gait('mx:axeWalkBack'), strafeL: gait('mx:axeWalkL'), strafeR: gait('mx:axeWalkR'),
@@ -73,12 +85,17 @@ const BANDIT_BAKED = {
   enemyHeavy: { src: 'mx:axeDown', t0: 0.05, t1: 1.9, key: 0.83, fade: 0.12, grip: 'hand' },             // overhead chop
   enemyThrust: { src: 'mx:thrustSlash', t0: 0.1, t1: 1.6, key: 0.85, fade: 0.12, grip: 'hand', align: true },
   block: { src: 'mx:axeBlock', loop: true, fade: 0.1, grip: 'hand', mask: 'upper' },
+  blockHit: { src: 'mx:axeBlockReact', t0: 0.05, t1: 0.6, fade: 0.04, grip: 'hand' },   // the blade held up, driven back
   taunt: { src: 'mx:axeBattlecry', t0: 0, t1: 2.8, fade: 0.2, grip: 'hand' },
-  hitFront: { src: 'mx:axeHitGut', t0: 0, t1: 1.3, fade: 0.06, grip: 'hand' },
+  hitFront: { src: 'mx:axeHitGut', t0: 0, t1: 0.9, fade: 0.06, grip: 'hand' },
+  hitHeavy: { src: 'mx:axeHitLeft', t0: 0, t1: 1.03, fade: 0.06, grip: 'hand' },
+  stagger: { src: 'mx:axeHitRight', t0: 0, t1: 1.6, fade: 0.08, grip: 'hand' },       // spun half round, blade flung out
+  parried: { src: 'mx:axeBlockReact', t0: 0.05, t1: 1.2, fade: 0.04, grip: 'hand' },
 };
 // the shieldman: sword-and-shield mocap (the rattan shield rides the left forearm through all of it)
 const SHIELD_BAKED = {
   ...ENEMY_BAKED,
+  idle: { src: 'mx:ssIdle', loop: true, fade: 0.3, grip: 'hand' },
   combatIdle: { src: 'mx:ssIdle', loop: true, fade: 0.3, grip: 'hand' },
   walk: gait('mx:ssWalk'), run: gait('mx:ssRun', 0.2), sprint: gait('mx:ssRun', 0.2),
   walkBack: gait('mx:ssWalkBack'), strafeL: gait('mx:ssStrafeL'), strafeR: gait('mx:ssStrafeR'),
@@ -100,16 +117,36 @@ const ARCHER_BAKED = {
   // reach to the quiver, nock, draw (the telegraph), loose on the clip's shootAt (a composite take, tools/mixamo)
   bowShot: { src: 'mx:bowShotFull', t0: 0, t1: 2.63, sync: [[0.8, 1.9], [1.12, 2.31]], fade: 0.15 },
   enemyKick: { src: 'mx:axeKick', t0: 0.2, t1: 1.5, key: 0.75, fade: 0.1, mask: 'arms' },
-  hitFront: { src: 'mx:bowHit', t0: 0, t1: 1.2, fade: 0.06 },
+  hitFront: { src: 'mx:bowHit', t0: 0, t1: 0.9, fade: 0.06 },
+  hitBack: { src: 'mx:bowHitBack', t0: 0, t1: 0.8, fade: 0.06 },          // shoved forward, bow arm thrown out
+  hitHeavy: { src: 'mx:bowHitHead', t0: 0, t1: 0.97, fade: 0.06 },        // the head snapped back
+  stagger: { src: 'mx:reactLargeFront', t0: 0, t1: 1.37, fade: 0.08 },    // both hands free to fling (the bow goes with)
+  parried: { src: 'mx:bowHitLarge', t0: 0, t1: 1.0, fade: 0.05 },
   death: { src: 'mx:bowDeath', t0: 0, t1: 3.0, fade: 0.1 }, deathBack: { src: 'mx:bowDeath', t0: 0, t1: 3.0, fade: 0.1 },
 };
-// the spearman: bayonet / staff mocap, the shaft laid from fist to fist
+// the spearman: rifle and bayonet mocap, the shaft laid from fist to fist ('pole'): the aimed-rifle guard levels the
+// spear at the chest, and he advances, backs off and circles behind it
+const pole = (src, fade = 0.25, extra = {}) => gait(src, fade, { grip: 'pole', ...extra });
 const SPEAR_BAKED = {
   ...ENEMY_BAKED,
+  idle: { src: 'mx:rifleIdle', loop: true, fade: 0.3, grip: 'pole' },               // shaft low across the body
+  combatIdle: { src: 'mx:rifleAimIdle', loop: true, fade: 0.3, grip: 'pole' },      // levelled at the chest
+  walk: pole('mx:rifleWalk'), run: pole('mx:rifleRun', 0.2), sprint: pole('mx:rifleRun', 0.2),
+  walkBack: pole('mx:rifleWalkBack'), strafeL: pole('mx:rifleStrafeL'), strafeR: pole('mx:rifleStrafeR'),
   enemyThrust: { src: 'mx:bayonetStab', t0: 0.3, t1: 1.8, key: 1.0, fade: 0.12, grip: 'pole' },
   spearJab2: { src: 'mx:bayonetSlash', t0: 0.2, t1: 1.9, keys: [0.75, 1.3], fade: 0.12, grip: 'pole' },
+  // the guard: the animator's shaft held across (the rifle block pushes the stock out ahead, which reads as the spear
+  // turned backwards) over the aimed stance's breathing body; a blow on it rocks the body, the arms hold
+  block: { src: 'mx:rifleAimIdle', loop: true, fade: 0.1, mask: 'arms' },
+  blockHit: { src: 'mx:rifleHit', t0: 0.25, t1: 0.8, fade: 0.04, mask: 'arms' },
+  hitFront: { src: 'mx:rifleHit', t0: 0.25, t1: 1.1, fade: 0.06, grip: 'pole' },
+  hitBack: { ...REACT.hitBack, mask: 'arms' },                                       // both hands stay on the shaft
+  hitHeavy: { src: 'mx:rifleHitL', t0: 0.2, t1: 1.4, fade: 0.06, grip: 'pole' },
+  stagger: { src: 'mx:rifleHitBig', t0: 0.1, t1: 2.0, fade: 0.08, grip: 'pole' },    // doubles over the shaft
+  parried: { src: 'mx:rifleHitL', t0: 0.2, t1: 1.3, fade: 0.05, grip: 'pole' },
 };
-// the two bosses: the hero's sword mocap at enemy pacing (long windups: the telegraph)
+// the two bosses: the hero's sword mocap at enemy pacing (long windups: the telegraph); guards, beats and footwork
+// from the one-handed weapon packs, the free hand left to the animator where the take holds a shield in it
 const DUEL_BAKED = {
   enemyAttack1: { src: 'mx:ssSlash', t0: 0, t1: 1.4, key: 0.7, fade: 0.12, grip: 'hand', jianzhi: true },
   enemyAttack2: { src: 'mx:inwardSlash', t0: 0.4, t1: 1.9, key: 1.2, fade: 0.12, grip: 'hand' },
@@ -119,23 +156,39 @@ const DUEL_BAKED = {
   bossDash: { src: 'mx:ssHighAttack', t0: 0.1, t1: 1.2, key: 0.57, fade: 0.1, grip: 'hand', jianzhi: true, align: true },
   bossLeap: { src: 'mx:ssJumpAttack', t0: 0, t1: 2.2, key: 1.2, fade: 0.1, grip: 'hand', jianzhi: true },
   bossQi: { src: 'mx:ssPowerSlash', t0: 0.5, t1: 2.1, fade: 0.1, grip: 'hand', jianzhi: true },
+  walkBack: gait('mx:ssWalkBack', 0.25, { mask: 'left' }), strafeL: gait('mx:ssStrafeL', 0.25, { mask: 'left' }), strafeR: gait('mx:ssStrafeR', 0.25, { mask: 'left' }),
+  block: { src: 'mx:axeBlock', loop: true, fade: 0.1, grip: 'hand', mask: 'upper' },   // the blade up across the head
+  blockHit: { src: 'mx:axeBlockReact', t0: 0.05, t1: 0.6, fade: 0.04, grip: 'hand' },
+  parry: { src: 'mx:axeBlockReact', t0: 0, t1: 0.55, fade: 0.03, grip: 'hand' },   // the blade snapped up into the cut, the body gives
 };
-// the swordmaster borrows three bodies from the hero's library (EXTRA_ANIMS): a poised ready stance, the hands-on-hip
-// once-over (the sword arm keeps hanging the blade point-down), and the sword whirled round him for the second phase
+// the two bosses borrow bodies from the hero's library (EXTRA_ANIMS): a poised ready stance, the hands-on-hip
+// once-over (the sword arm keeps hanging the blade point-down), and (the swordmaster) the sword whirled round him for
+// the second phase
+const BOSS_EXTRA = {
+  // the poised horse stance, arms on the animator: the source holds its free hand over its mouth the whole loop
+  idle: { src: 'A Chinese swordsman stands in a poised martial arts', loop: true, pingpong: true, fade: 0.3, mask: 'arms' },
+  combatIdle: { src: 'A Chinese swordsman stands in a poised martial arts', loop: true, pingpong: true, fade: 0.3, mask: 'arms' },
+  bossTaunt: { src: '自信地叉腰站立', t0: 0.3, t1: 3.2, fade: 0.25, mask: 'body' },
+};
 const MASTER_BAKED = {
   ...ENEMY_BAKED,
   ...DUEL_BAKED,
-  // the poised horse stance, arms on the animator: the source holds its free hand over its mouth the whole loop
-  combatIdle: { src: 'A Chinese swordsman stands in a poised martial arts', loop: true, pingpong: true, fade: 0.3, mask: 'arms' },
-  bossTaunt: { src: '自信地叉腰站立', t0: 0.3, t1: 3.2, fade: 0.25, mask: 'body' },
+  ...BOSS_EXTRA,
   bossFlourish: { src: 'A swordsman whirls a sword in fast circles', t0: 1.6, t1: 4.0, fade: 0.2, mask: 'left' },   // the whirl itself is 2.1–3.3 s; the source's free hand hides the mouth
 };
-const EXTRA_ANIMS = { swordmaster: ['assets/models/hero-tripo.glb'] };
+// 夜枭: the darts leave his off hand in an overhand throw (a right-handed take, mirrored), released on the clip's shootAt
+const ASSASSIN_BAKED = {
+  ...ENEMY_BAKED,
+  ...DUEL_BAKED,
+  ...BOSS_EXTRA,
+  dartThrow: { src: 'mx:throwL', t0: 0.35, t1: 1.75, sync: [[0.6, 1.15]], fade: 0.1, grip: 'hand' },
+};
+const EXTRA_ANIMS = { swordmaster: ['assets/models/hero-tripo.glb'], assassin: ['assets/models/hero-tripo.glb'] };
 /** Mixamo mocap pack (tools/mixamo): table entries with src 'mx:<key>' are retargeted from it (mixamoAnims.js). */
 const MIXAMO_PACK = 'assets/anims/mixamo.glb';
 const BAKED = {
   bandit: BANDIT_BAKED, bandit_heavy: BANDIT_BAKED, spearman: SPEAR_BAKED, archer: ARCHER_BAKED, shieldman: SHIELD_BAKED, swordmaster: MASTER_BAKED,
-  assassin: { ...ENEMY_BAKED, ...DUEL_BAKED },
+  assassin: ASSASSIN_BAKED,
   hero: {
     idle: { src: 'idle', loop: true, fade: 0.35 },
     combatIdle: { src: 'A calm swordsman stands in a relaxed ready stance', loop: true, pingpong: true, fade: 0.3, mask: 'body' },   // sword arm: the stance's low blade (every cut ends there)

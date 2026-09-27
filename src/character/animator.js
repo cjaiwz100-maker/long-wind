@@ -23,7 +23,7 @@
 // (drawn, sheathed, impact, release, plant). Each event carries { type, clip }.
 import * as THREE from 'three';
 import { RigSolver, Pose, ROT_CHANNELS, D2R, GRIP_R } from './ik.js';
-import { FootPlanter } from './ikfeet.js';
+import { FootPlanter, airWeight } from './ikfeet.js';
 import { Gait } from './clips/locomotion.js';
 import { COMPILED, CLIPS } from './clips/index.js';
 
@@ -267,6 +267,7 @@ export class Animator {
       // footFromAnchor via the planter's helper path
       _footFromAnchor(_v, pose.footQ[i], pose.pitch[i], s, F.ankles[i], F.footQ[i]);
     }
+    this.solver.air = airWeight(Math.min(pose.foot[0].y, pose.foot[1].y));
     this.solver.torso(pose);
     const need = this.solver.maxPelvisDrop(pose, F.ankles);
     if (need > 0) pose.hips.y -= need;

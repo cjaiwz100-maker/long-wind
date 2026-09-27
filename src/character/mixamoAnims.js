@@ -3,6 +3,7 @@
 // layer (bakedAnim.js) can play them exactly like the clips that ship inside the skin's GLB.
 //
 //   const clips = retargetMixamo(pack, modelScene, mb, groupInv, keys)   → AnimationClip[] named 'mx:<key>'
+//   (a skeleton with other bone names, e.g. the procedural contract rig: pass { nameOf: bone → Mixamo short name | null })
 //
 // Retargeting is done in world space against both rest (T) poses: every source bone's rotation away from its rest,
 //   D = W_src(t) · S⁻¹        (S = source rest, world)
@@ -22,8 +23,9 @@ const short = (n) => n.replace(/^mixamorig[:_]?/, '');
  * @param {(name: string) => THREE.Object3D} mb  target bone by short Mixamo name
  * @param {THREE.Matrix4} groupInv  inverse world matrix of the character group (the frame both rests are compared in)
  * @param {string[]} keys  which clips to retarget (manifest keys; ['*'] = all)
+ * @param {{ nameOf?: (bone: THREE.Object3D) => string | null }} [opts]  target bone → Mixamo short name (default: its own)
  */
-export function retargetMixamo(pack, target, mb, groupInv, keys) {
+export function retargetMixamo(pack, target, mb, groupInv, keys, { nameOf = null } = {}) {
   // --- source skeleton at rest (world = relative to the pack's scene root)
   const src = [];
   pack.scene.updateMatrixWorld(true);
@@ -46,7 +48,8 @@ export function retargetMixamo(pack, target, mb, groupInv, keys) {
   const tgt = [];
   hipsT.traverse((o) => {
     if (!o.isBone && !/^mixamorig/.test(o.name)) return;
-    const sb = src.find((x) => x.name === short(o.name));
+    const nm = nameOf ? nameOf(o) : short(o.name);
+    const sb = nm ? src.find((x) => x.name === nm) : null;
     tgt.push({ o, name: short(o.name), T: worldQ(o), restL: o.quaternion.clone(), src: sb ?? null, parent: null });
   });
   for (const t of tgt) t.parent = tgt.find((x) => x.o === t.o.parent) ?? null;
