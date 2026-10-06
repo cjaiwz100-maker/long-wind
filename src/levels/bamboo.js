@@ -2,7 +2,7 @@
 // runs through the clearing; the bandits come out of the culms on every side.
 export default {
   id: 'bamboo', no: '第二章', title: '比捷试峰', en: 'Night Rain in the Bamboo',
-  tagline: '竹声 · 雨声', enTagline: 'the rain hides the footsteps',
+  tagline: '开宗 · 立派', enTagline: 'the rain hides the footsteps',
   env: { mood: 'blue', u: 0.79, drift: false, storm: 0.45, rain: 1, wet: 1, wind: 1.15, lightning: [7, 16], exposure: 1.6, victoryMood: null },
   layout: {
     arenaRadius: 60, playableRadius: 60,
@@ -43,10 +43,10 @@ export default {
   // enemies step out of the culms all round the clearing (not from the sun: there is none)
   spawn: { ring: true, r: 21 },
   waves: [
-    { title: '夜雨', sub: 'Night Rain', enemies: ['bandit', 'bandit', 'bandit'], wind: 1.1, maxAttackers: 1 },
-    { title: '竹影', sub: 'Shadows in the Bamboo', enemies: ['archer', 'bandit', 'spearman', 'archer', 'bandit'], wind: 1.2, maxAttackers: 2 },
-    { title: '惊雷', sub: 'Thunder', enemies: ['shieldman', 'spearman', 'bandit_heavy', 'archer', 'bandit', 'spearman'], wind: 1.35, maxAttackers: 2 },
-    { title: '断岳', sub: 'The Mountain-Breaker', enemies: ['bandit_heavy', 'shieldman', 'shieldman', 'archer'], wind: 1.4, maxAttackers: 2 },
+    { title: '币安创宗', sub: 'Founding of Binance Sect', enemies: ['bandit', 'bandit', 'bandit'], wind: 1.1, maxAttackers: 1 },
+    { title: '九四惊变', sub: 'The September 4th Upheaval', enemies: ['archer', 'bandit', 'spearman', 'archer', 'bandit'], wind: 1.2, maxAttackers: 2 },
+    { title: '再入东京', sub: 'Return to Tokyo', enemies: ['shieldman', 'spearman', 'bandit_heavy', 'archer', 'bandit', 'spearman'], wind: 1.35, maxAttackers: 2 },
+    { title: '独步天下', sub: 'Unrivaled Under Heaven', enemies: ['bandit_heavy', 'shieldman', 'shieldman', 'archer'], wind: 1.4, maxAttackers: 2 },
     // the boss: 夜枭 alone in the rain — he vanishes into it and strikes from behind; the lightning shows him
     { title: '夜枭', sub: 'The Night Owl', enemies: ['assassin'], wind: 1.6, windPhase2: 2.1, boss: true, maxAttackers: 1 },
   ],
