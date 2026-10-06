@@ -51,7 +51,7 @@ export async function buildTextures(root) {
     ]);
   } catch { /* fonts are optional: fall back to system serif */ }
   const mk = async (key, opts) => { seals[key] = await toURL(sealTex(opts)); await tick(); };
-  await mk('title', { text: '长风', h: 160, seed: 2 });
+  await mk('title', { text: '长鹏', h: 160, seed: 2 });
   await mk('sword', { text: '剑', h: 96, w: 96, seed: 5 });
   await mk('parry', { text: '破', h: 96, w: 96, seed: 6, white: false });
   await mk('xia', { text: '侠客', h: 150, seed: 8 });
