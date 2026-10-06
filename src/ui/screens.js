@@ -88,7 +88,7 @@ ${FILTERS}
 <div class="banner"><div class="wash"></div><div class="no"></div><div class="tt"></div><div class="ru m"></div><div class="en"></div><img class="seal" alt=""></div>
 <div class="hint">${HINT.map((i) => `<kbd>${CONTROLS[i][0]}</kbd><span>${CONTROLS[i][1]}<i>${CONTROLS[i][2]}</i></span>`).join('')}</div>
 <div class="scr title">
-<a class="xlink" href="https://x.com/changfengbsc" target="_blank" rel="noopener" aria-label="X">
+<a class="xlink" href="https://x.com/changpengxingBSC" target="_blank" rel="noopener" aria-label="X">
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M18.2 2H21l-6.5 7.4L22 22h-6.8l-4.7-6.2L5.4 22H2.6l7-8L2 2h7l4.3 5.7L18.2 2zm-1.2 18h1.8L7.1 3.9H5.2L17 20z"/></svg>
   </a>
   <div class="shade"></div>
