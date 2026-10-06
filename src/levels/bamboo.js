@@ -1,4 +1,4 @@
-// 第二章 · 竹林夜雨 — a clearing deep in a bamboo grove, night, heavy rain, lightning. The path the hero came by
+// 第二章 · 早年岁月 — a clearing deep in a bamboo grove, night, heavy rain, lightning. The path the hero came by
 // runs through the clearing; the bandits come out of the culms on every side.
 export default {
   id: 'bamboo', no: '第二章', title: '早年岁月', en: 'Night Rain in the Bamboo',
