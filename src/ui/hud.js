@@ -357,8 +357,8 @@ export function createHUD(app, opts = {}) {
     }, 160);
   }
   function onPointerDown(ev) {
+    if (ev.target?.closest?.('a')) return;
     if (S.state === 'title') { emitOnce('ui:start', {}); bus.emit('ui:sfx', { kind: 'seal' }); return; }
-    if ((S.state === 'victory' || S.state === 'defeat') && S.now - S.stateT > 5) { emitOnce('ui:restart', {}); bus.emit('ui:sfx', { kind: 'seal' }); return; }
     const act = ev.target?.closest?.('[data-act]')?.dataset.act;
     if (!act) return;
     if (act === 'resume') { emitOnce('ui:resume', {}); bus.emit('ui:sfx', { kind: 'tick' }); resumeFallback(); }
