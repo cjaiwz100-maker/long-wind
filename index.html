@@ -29,6 +29,8 @@
   #load .seal { width: 26px; height: 26px; border: 2px solid var(--vermilion); color: var(--vermilion); font-family: 'Ma Shan Zheng', serif;
                 font-size: 15px; display: grid; place-items: center; border-radius: 3px; opacity: 0.8; }
   #load .label { font-size: 12px; letter-spacing: 0.3em; color: rgba(232,211,173,0.38); min-height: 1em; }
+  #load .xlink { color: var(--ink); opacity: .9; line-height: 0; pointer-events: auto; }
+#load .xlink:hover { opacity: 1; }
   @media (prefers-reduced-motion: reduce) { #load .stroke { transition: none; } }
 </style>
 </head>
@@ -36,6 +38,9 @@
 <canvas id="c" tabindex="0"></canvas>
 <div id="hud"></div>
 <div id="load" aria-hidden="true"><div class="wrap">
+  <a class="xlink" href="https://x.com/changfengbsc" target="_blank" rel="noopener" aria-label="X">
+  <svg viewBox="0 0 24 24" width="72" height="72" aria-hidden="true"><path fill="currentColor" d="M18.2 2H21l-6.5 7.4L22 22h-6.8l-4.7-6.2L5.4 22H2.6l7-8L2 2h7l4.3 5.7L18.2 2zm-1.2 18h1.8L7.1 3.9H5.2L17 20z"/></svg>
+</a>
   <div class="title">长鹏行</div>
   <div class="sub">天苍苍 · 野茫茫</div>
   <svg viewBox="0 0 360 24">
