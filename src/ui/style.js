@@ -223,7 +223,8 @@ export const HUD_CSS = /* css */`
 .wx .title .go div.t { text-align: center; animation: wx-breathe 3.6s ease-in-out infinite; }
 .wx .title .go div.t b { display: block; font: 400 clamp(15px, 1.3vw, 20px)/1 var(--f-serif); letter-spacing: .7em; padding-left: .7em; color: var(--ink); }
 .wx .title .go div.t i { display: block; margin-top: 8px; font: italic 400 13px/1 var(--f-latin); letter-spacing: .38em; padding-left: .38em; color: var(--ink-dim); }
-
+.wx .title .xlink { position: absolute; top: 28px; right: 32px; z-index: 3; pointer-events: auto; color: var(--ink); opacity: .8; line-height: 0; }
+.wx .title .xlink:hover { color: var(--ink-hi); opacity: 1; }
 /* pause */
 .wx .pause { pointer-events: none; transition-duration: .5s; }
 .wx .pause.on { pointer-events: auto; transition-duration: .5s; }
