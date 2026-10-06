@@ -1,4 +1,4 @@
-// 第三章 · 长街灯火 — a Jiangnan market town at dusk: one long lantern-lit street (along x) with shophouses on both
+// 第三章 · 加密寒冬 — a Jiangnan market town at dusk: one long lantern-lit street (along x) with shophouses on both
 // sides, a plaza at its heart (the fighting ground, with the opera stage 戏台 on its north side and a 牌坊 at each
 // street mouth), a canal crossing the street east of the plaza under an arched stone bridge. Townsfolk fill the street
 // until the fight starts; then they scatter. Owner: integrator.
