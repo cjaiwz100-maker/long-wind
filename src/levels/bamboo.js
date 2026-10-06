@@ -1,7 +1,7 @@
-// 第二章 · 早年岁月 — a clearing deep in a bamboo grove, night, heavy rain, lightning. The path the hero came by
+// 第二章 · 比捷试峰 — a clearing deep in a bamboo grove, night, heavy rain, lightning. The path the hero came by
 // runs through the clearing; the bandits come out of the culms on every side.
 export default {
-  id: 'bamboo', no: '第二章', title: '早年岁月', en: 'Night Rain in the Bamboo',
+  id: 'bamboo', no: '第二章', title: '比捷试峰', en: 'Night Rain in the Bamboo',
   tagline: '竹声 · 雨声', enTagline: 'the rain hides the footsteps',
   env: { mood: 'blue', u: 0.79, drift: false, storm: 0.45, rain: 1, wet: 1, wind: 1.15, lightning: [7, 16], exposure: 1.6, victoryMood: null },
   layout: {
