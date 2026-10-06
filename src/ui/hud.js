@@ -417,7 +417,7 @@ export function createHUD(app, opts = {}) {
   const autoplay = () => { if (S.state === 'boot') setState('playing'); };
   on('game:state', (p) => setState(p.state));
   on('wave:start', (p) => { autoplay(); waveBanner(p); });
-  on('wave:clear', (p) => { if (!p?.final) banner('风定', { no: '', en: 'The field falls still', seal: false, hold: 2.6 }); });
+  on('wave:clear', (p) => { if (!p?.final) banner('鹏定', { no: '', en: 'The field falls still', seal: false, hold: 2.6 }); });
   on('player:hp', (p) => { autoplay(); setPlayer({ hp: p.hp, max: p.max }); });
   on('player:focus', (p) => { autoplay(); setPlayer({ focus: p.value, focusMax: p.max }); });
   on('player:hurt', (p) => flourish('hurt', p.pos, p.dir));
