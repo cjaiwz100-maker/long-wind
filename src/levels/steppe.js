@@ -1,7 +1,7 @@
 // 第一章 · 长风 — the golden steppe at the hour before sunset (the original game). Everything here is the default
 // layout/terrain/biome (world/layout.js); only the waves and the environment are spelled out.
 export default {
-  id: 'steppe', no: '第一章', title: '长鹏', en: 'The Long Wind',
+  id: 'steppe', no: '第一章', title: '何一', en: 'The Long Wind',
   env: { mood: 'golden', drift: true, wind: 1.0 },
   waves: [
     { title: '鹏起', sub: 'Peng Qi', enemies: ['bandit', 'bandit', 'bandit'], wind: 1.0, mood: 'golden', maxAttackers: 1 },
