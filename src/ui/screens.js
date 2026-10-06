@@ -92,8 +92,8 @@ ${FILTERS}
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M18.2 2H21l-6.5 7.4L22 22h-6.8l-4.7-6.2L5.4 22H2.6l7-8L2 2h7l4.3 5.7L18.2 2zm-1.2 18h1.8L7.1 3.9H5.2L17 20z"/></svg>
   </a>
   <div class="shade"></div>
-  <div class="col"><div class="tt">长风</div><div class="tg">天苍苍 · 野茫茫</div><img class="seal" alt=""></div>
-  <div class="en"><b>LONG WIND</b><i>the wind arrives before the blade</i></div>
+  <div class="col"><div class="tt">长鹏行</div><div class="tg">天苍苍 · 野茫茫</div><img class="seal" alt=""></div>
+  <div class="en"><b>Chang Peng Xing</b><i>the wind arrives before the blade</i></div>
   <div class="go"><div class="ln m"></div><div class="t"><b>点击 · 启程</b><i>click to begin</i></div><div class="ln r m"></div></div>
 </div>
 
